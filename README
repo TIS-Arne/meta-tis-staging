@@ -1,0 +1,36 @@
+This README file contains information on the contents of the meta-tis-staging layer.
+
+Please see the corresponding sections below for details.
+
+Dependencies
+============
+
+  URI: https://git.toradex.com/meta-toradex-bsp-common.git
+  branch: scarthgap-7.x.y
+
+
+Patches and Support
+===================
+
+Please direct support requests regarding this layer or The Imaging Source sensor
+modules to this email adress:
+
+support@theimagingsource.com
+
+Please submit any patches against the meta-tis-tdx-cameras layer to the maintainer:
+
+Maintainer: Arne Caspari <arne.caspari@theimagingsource.com>
+
+
+Adding the meta-tis-staging layer to your build
+=================================================
+
+Run 'bitbake-layers add-layer meta-tis-staging'
+
+Layer Description
+=================
+
+This layer contains recipes that are experimental and untested. Use with caution.
+
+
+
