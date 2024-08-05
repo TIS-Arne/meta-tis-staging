@@ -19,6 +19,7 @@ IMAGE_INSTALL:append = " \
     gstreamer1.0 \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-ugly \
     libcamera  libcamera-gst \
     force-edid \
@@ -26,6 +27,7 @@ IMAGE_INSTALL:append = " \
     weston-xwayland \
     xterm \
     python3-pygobject python3-pyserial python3-pyyaml \
+    python3-numpy python3-pyqt5 \
     ${CONMANPKGS} packagegroup-basic \
     v4l-utils media-ctl coreutils util-linux i2c-tools python3 python3-smbus bash \
     libgpiod python3-gpiod \
