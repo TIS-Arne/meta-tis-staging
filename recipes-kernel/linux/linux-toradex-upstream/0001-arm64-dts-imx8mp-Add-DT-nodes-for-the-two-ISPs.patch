@@ -1,0 +1,83 @@
+From 959405a6a512f9f95a03ad8cfe4d67f047292d21 Mon Sep 17 00:00:00 2001
+From: Paul Elder <paul.elder@ideasonboard.com>
+Date: Fri, 11 Feb 2022 19:34:07 +0900
+Subject: [PATCH] arm64: dts: imx8mp: Add DT nodes for the two ISPs
+
+The ISP supports both CSI and parallel interfaces, where port 0
+corresponds to the former and port 1 corresponds to the latter. Since
+the i.MX8MP's ISPs are connected by the parallel interface to the CSI
+receiver, set them both to port 1.
+
+Signed-off-by: Paul Elder <paul.elder@ideasonboard.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Tested-by:  Adam Ford <aford173@gmail.com> # imx8mp-beacon
+---
+Changes since v1:
+
+- Fix clock ordering
+- Add #address-cells and #size-cells to ports nodes
+---
+ arch/arm64/boot/dts/freescale/imx8mp.dtsi | 50 +++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp.dtsi b/arch/arm64/boot/dts/freescale/imx8mp.dtsi
+index b92abb5a5c53..cb59a03eb700 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mp.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx8mp.dtsi
+@@ -1643,6 +1643,56 @@ isi_in_1: endpoint {
+ 				};
+ 			};
+ 
++			isp_0: isp@32e10000 {
++				compatible = "fsl,imx8mp-isp";
++				reg = <0x32e10000 0x10000>;
++				interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX8MP_CLK_MEDIA_ISP_ROOT>,
++					 <&clk IMX8MP_CLK_MEDIA_AXI_ROOT>,
++					 <&clk IMX8MP_CLK_MEDIA_APB_ROOT>;
++				clock-names = "isp", "aclk", "hclk";
++				assigned-clocks = <&clk IMX8MP_CLK_MEDIA_ISP>;
++				assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_500M>;
++				assigned-clock-rates = <500000000>;
++				power-domains = <&media_blk_ctrl IMX8MP_MEDIABLK_PD_ISP>;
++				fsl,blk-ctrl = <&media_blk_ctrl 0>;
++				status = "disabled";
++
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					port@1 {
++						reg = <1>;
++					};
++				};
++			};
++
++			isp_1: isp@32e20000 {
++				compatible = "fsl,imx8mp-isp";
++				reg = <0x32e20000 0x10000>;
++				interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX8MP_CLK_MEDIA_ISP_ROOT>,
++					 <&clk IMX8MP_CLK_MEDIA_AXI_ROOT>,
++					 <&clk IMX8MP_CLK_MEDIA_APB_ROOT>;
++				clock-names = "isp", "aclk", "hclk";
++				assigned-clocks = <&clk IMX8MP_CLK_MEDIA_ISP>;
++				assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_500M>;
++				assigned-clock-rates = <500000000>;
++				power-domains = <&media_blk_ctrl IMX8MP_MEDIABLK_PD_ISP>;
++				fsl,blk-ctrl = <&media_blk_ctrl 1>;
++				status = "disabled";
++
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					port@1 {
++						reg = <1>;
++					};
++				};
++			};
++
+ 			dewarp: dwe@32e30000 {
+ 				compatible = "nxp,imx8mp-dw100";
+ 				reg = <0x32e30000 0x10000>;

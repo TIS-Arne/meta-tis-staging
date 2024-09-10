@@ -1,0 +1,183 @@
+From b6357a29a84f19868090c4d476449379f894d3df Mon Sep 17 00:00:00 2001
+From: Arne Caspari <arne.caspari@theimagingsource.com>
+Date: Thu, 1 Aug 2024 15:40:57 +0200
+Subject: [PATCH] Use TIS default register list for imx296 initialization
+
+---
+ drivers/media/i2c/imx296.c | 134 +++++++++++++++++++++++--------------
+ 1 file changed, 85 insertions(+), 49 deletions(-)
+
+diff --git a/drivers/media/i2c/imx296.c b/drivers/media/i2c/imx296.c
+index 83149fa729c4..4ec04e9d7a07 100644
+--- a/drivers/media/i2c/imx296.c
++++ b/drivers/media/i2c/imx296.c
+@@ -328,12 +328,20 @@ static int imx296_s_ctrl(struct v4l2_ctrl *ctrl)
+ 	switch (ctrl->id) {
+ 	case V4L2_CID_EXPOSURE:
+ 		/* Clamp the exposure value to VMAX. */
+-		vmax = format->height + sensor->vblank->cur.val;
+-		ctrl->val = min_t(int, ctrl->val, vmax);
+-		imx296_write(sensor, IMX296_SHS1, vmax - ctrl->val, &ret);
++        u32 val;
++        const u32 vmax_max = 0xffff;
++		u32 vmax_min = format->height + sensor->vblank->cur.val;
++        u32 vmax;
++		ctrl->val = min_t(int, ctrl->val, vmax_max);
++        vmax = max_t(int, ctrl->val + 4, vmax_min);
++        val = max_t(int, 1, vmax - ctrl->val);
++        // dev_info(sensor->dev, "Exp: %d VMAX: %d\n", val, vmax);
++		imx296_write(sensor, IMX296_SHS1, val, &ret);
++        imx296_write(sensor, IMX296_VMAX, vmax, &ret);
+ 		break;
+ 
+ 	case V4L2_CID_ANALOGUE_GAIN:
++        // dev_info(sensor->dev, "Gain: %d\n", ctrl->val);
+ 		imx296_write(sensor, IMX296_GAIN, ctrl->val, &ret);
+ 		break;
+ 
+@@ -453,55 +461,83 @@ static int imx296_ctrls_init(struct imx296 *sensor)
+  */
+ 
+ /*
+- * This table is extracted from vendor data that is entirely undocumented. The
+- * first register write is required to activate the CSI-2 output. The other
+- * entries may or may not be optional?
++ * Default register initialization table for imx296 full sensor readout
+  */
+ static const struct {
+ 	unsigned int reg;
+ 	unsigned int value;
+ } imx296_init_table[] = {
+-	{ IMX296_REG_8BIT(0x3005), 0xf0 },
+-	{ IMX296_REG_8BIT(0x309e), 0x04 },
+-	{ IMX296_REG_8BIT(0x30a0), 0x04 },
+-	{ IMX296_REG_8BIT(0x30a1), 0x3c },
+-	{ IMX296_REG_8BIT(0x30a4), 0x5f },
+-	{ IMX296_REG_8BIT(0x30a8), 0x91 },
+-	{ IMX296_REG_8BIT(0x30ac), 0x28 },
+-	{ IMX296_REG_8BIT(0x30af), 0x09 },
+-	{ IMX296_REG_8BIT(0x30df), 0x00 },
+-	{ IMX296_REG_8BIT(0x3165), 0x00 },
+-	{ IMX296_REG_8BIT(0x3169), 0x10 },
+-	{ IMX296_REG_8BIT(0x316a), 0x02 },
+-	{ IMX296_REG_8BIT(0x31c8), 0xf3 },	/* Exposure-related */
+-	{ IMX296_REG_8BIT(0x31d0), 0xf4 },	/* Exposure-related */
+-	{ IMX296_REG_8BIT(0x321a), 0x00 },
+-	{ IMX296_REG_8BIT(0x3226), 0x02 },
+-	{ IMX296_REG_8BIT(0x3256), 0x01 },
+-	{ IMX296_REG_8BIT(0x3541), 0x72 },
+-	{ IMX296_REG_8BIT(0x3516), 0x77 },
+-	{ IMX296_REG_8BIT(0x350b), 0x7f },
+-	{ IMX296_REG_8BIT(0x3758), 0xa3 },
+-	{ IMX296_REG_8BIT(0x3759), 0x00 },
+-	{ IMX296_REG_8BIT(0x375a), 0x85 },
+-	{ IMX296_REG_8BIT(0x375b), 0x00 },
+-	{ IMX296_REG_8BIT(0x3832), 0xf5 },
+-	{ IMX296_REG_8BIT(0x3833), 0x00 },
+-	{ IMX296_REG_8BIT(0x38a2), 0xf6 },
+-	{ IMX296_REG_8BIT(0x38a3), 0x00 },
+-	{ IMX296_REG_8BIT(0x3a00), 0x80 },
+-	{ IMX296_REG_8BIT(0x3d48), 0xa3 },
+-	{ IMX296_REG_8BIT(0x3d49), 0x00 },
+-	{ IMX296_REG_8BIT(0x3d4a), 0x85 },
+-	{ IMX296_REG_8BIT(0x3d4b), 0x00 },
+-	{ IMX296_REG_8BIT(0x400e), 0x58 },
+-	{ IMX296_REG_8BIT(0x4014), 0x1c },
+-	{ IMX296_REG_8BIT(0x4041), 0x2a },
+-	{ IMX296_REG_8BIT(0x40a2), 0x06 },
+-	{ IMX296_REG_8BIT(0x40c1), 0xf6 },
+-	{ IMX296_REG_8BIT(0x40c7), 0x0f },
+-	{ IMX296_REG_8BIT(0x40c8), 0x00 },
+-	{ IMX296_REG_8BIT(0x4174), 0x00 },
++	// Chip-ID: 02, 0x30xx
++	{IMX296_REG_8BIT(0x3005), 0xf0}, 
++	{IMX296_REG_8BIT(0x3079), 0x08}, 
++	{IMX296_REG_8BIT(0x3090), 0x04}, 
++	{IMX296_REG_8BIT(0x3094), 0x04}, 
++	{IMX296_REG_8BIT(0x3098), 0x04}, 
++	{IMX296_REG_8BIT(0x309e), 0x04}, 
++	{IMX296_REG_8BIT(0x30a0), 0x04}, 
++	{IMX296_REG_8BIT(0x30a1), 0x3c}, 
++	{IMX296_REG_8BIT(0x30a4), 0x5f}, 
++	{IMX296_REG_8BIT(0x30a8), 0x91}, 
++	{IMX296_REG_8BIT(0x30ac), 0x28}, 
++	{IMX296_REG_8BIT(0x30af), 0x09}, 
++	{IMX296_REG_8BIT(0x30df), 0x00}, 
++
++	{IMX296_REG_8BIT(0x300d), 0x0},  
++	{IMX296_REG_8BIT(0x3010), 0x5e}, 
++	{IMX296_REG_8BIT(0x3011), 0x04}, 
++	{IMX296_REG_8BIT(0x3012), 0x00}, 
++	{IMX296_REG_8BIT(0x3014), 0x4c}, 
++	{IMX296_REG_8BIT(0x3015), 0x04}, 
++
++	{IMX296_REG_8BIT(0x3089), 0x80}, 
++	{IMX296_REG_8BIT(0x308a), 0x0b}, 
++	{IMX296_REG_8BIT(0x308b), 0x80}, 
++	{IMX296_REG_8BIT(0x308c), 0x08}, 
++	{IMX296_REG_8BIT(0x418c), 0x74}, 
++
++	{IMX296_REG_8BIT(0x3165), 0x00}, 
++	{IMX296_REG_8BIT(0x3169), 0x10}, 
++	{IMX296_REG_8BIT(0x316a), 0x02}, 
++	{IMX296_REG_8BIT(0x31c8), 0xf3}, 
++	{IMX296_REG_8BIT(0x31d0), 0xf4}, 
++
++	{IMX296_REG_8BIT(0x3212), 0x00}, 
++	{IMX296_REG_8BIT(0x321a), 0x00}, 
++	{IMX296_REG_8BIT(0x3226), 0x02}, 
++	{IMX296_REG_8BIT(0x3254), 0x3c}, 
++	{IMX296_REG_8BIT(0x3255), 0x00}, 
++	{IMX296_REG_8BIT(0x3256), 0x01}, 
++
++	{IMX296_REG_8BIT(0x350b), 0x7f}, 
++	{IMX296_REG_8BIT(0x3516), 0x77}, 
++	{IMX296_REG_8BIT(0x3541), 0x72}, 
++
++	{IMX296_REG_8BIT(0x3832), 0xf5}, 
++	{IMX296_REG_8BIT(0x3833), 0x00}, 
++	{IMX296_REG_8BIT(0x3858), 0xa3}, 
++	{IMX296_REG_8BIT(0x3859), 0x00}, 
++	{IMX296_REG_8BIT(0x385a), 0x85}, 
++	{IMX296_REG_8BIT(0x385b), 0x00}, 
++	{IMX296_REG_8BIT(0x38a2), 0xf6}, 
++	{IMX296_REG_8BIT(0x38a3), 0x00}, 
++
++	{IMX296_REG_8BIT(0x3a00), 0x80}, 
++
++	{IMX296_REG_8BIT(0x3c48), 0xa3}, 
++	{IMX296_REG_8BIT(0x3c49), 0x00}, 
++	{IMX296_REG_8BIT(0x3c4a), 0x85}, 
++	{IMX296_REG_8BIT(0x3c4b), 0x00}, 
++
++	{IMX296_REG_8BIT(0x400e), 0x58},
++	{IMX296_REG_8BIT(0x4014), 0x1c}, 
++	{IMX296_REG_8BIT(0x4041), 0x2a}, 
++	{IMX296_REG_8BIT(0x40a2), 0x06}, 
++	{IMX296_REG_8BIT(0x40c1), 0xf6}, 
++	{IMX296_REG_8BIT(0x40c7), 0x0f}, 
++	{IMX296_REG_8BIT(0x40c8), 0x00}, 
++
++	{IMX296_REG_8BIT(0x4174), 0x00}, 
++
+ };
+ 
+ static int imx296_setup(struct imx296 *sensor, struct v4l2_subdev_state *state)
+@@ -651,7 +687,7 @@ static int imx296_enum_mbus_code(struct v4l2_subdev *sd,
+ 		return -EINVAL;
+ 
+ 	code->code = sensor->mono ? MEDIA_BUS_FMT_Y10_1X10
+-		   : MEDIA_BUS_FMT_SBGGR10_1X10;
++		   : MEDIA_BUS_FMT_SRGGB10_1X10;
+ 
+ 	return 0;
+ }
+@@ -714,7 +750,7 @@ static int imx296_set_format(struct v4l2_subdev *sd,
+ 	}
+ 
+ 	format->code = sensor->mono ? MEDIA_BUS_FMT_Y10_1X10
+-		     : MEDIA_BUS_FMT_SBGGR10_1X10;
++		     : MEDIA_BUS_FMT_SRGGB10_1X10;
+ 	format->field = V4L2_FIELD_NONE;
+ 	format->colorspace = V4L2_COLORSPACE_RAW;
+ 	format->ycbcr_enc = V4L2_YCBCR_ENC_DEFAULT;

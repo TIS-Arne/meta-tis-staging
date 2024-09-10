@@ -1,0 +1,72 @@
+From 9236e02f696a9a66ec57fd004068eef81f83d7be Mon Sep 17 00:00:00 2001
+From: Arne Caspari <arne.caspari@theimagingsource.com>
+Date: Fri, 16 Aug 2024 16:24:21 +0200
+Subject: [PATCH] Add trigger control to imx296
+
+---
+ drivers/media/i2c/imx296.c | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/drivers/media/i2c/imx296.c b/drivers/media/i2c/imx296.c
+index 4ec04e9d7a07..992676f25528 100644
+--- a/drivers/media/i2c/imx296.c
++++ b/drivers/media/i2c/imx296.c
+@@ -173,6 +173,8 @@
+ #define IMX296_GTTABLENUM				IMX296_REG_8BIT(0x4114)
+ #define IMX296_CTRL418C					IMX296_REG_8BIT(0x418c)
+ 
++#define TIS_SENSOR_CID_TRIGGER_MODE		(V4L2_CTRL_CLASS_USER + 0x3901)
++
+ struct imx296_clk_params {
+ 	unsigned int freq;
+ 	u8 incksel[4];
+@@ -207,6 +209,7 @@ struct imx296 {
+ 	struct v4l2_ctrl_handler ctrls;
+ 	struct v4l2_ctrl *hblank;
+ 	struct v4l2_ctrl *vblank;
++    struct v4l2_ctrl *exttrigger;
+ };
+ 
+ static inline struct imx296 *to_imx296(struct v4l2_subdev *sd)
+@@ -377,6 +380,12 @@ static int imx296_s_ctrl(struct v4l2_ctrl *ctrl)
+ 		}
+ 		break;
+ 
++    case TIS_SENSOR_CID_TRIGGER_MODE:
++        dev_info(sensor->dev, "Trigger: %d\n", ctrl->val);
++        imx296_write(sensor,  IMX296_LOWLAGTRG, ctrl->val ? 0x01 : 0x00, &ret);
++        imx296_write(sensor, IMX296_CTRL0B, ctrl->val ? 0x01 : 0x00, &ret);
++        break;
++
+ 	default:
+ 		ret = -EINVAL;
+ 		break;
+@@ -441,6 +450,28 @@ static int imx296_ctrls_init(struct imx296 *sensor)
+ 				     ARRAY_SIZE(imx296_test_pattern_menu) - 1,
+ 				     0, 0, imx296_test_pattern_menu);
+ 
++    /*
++     * 
++    */
++    struct v4l2_ctrl_config cfg = {
++        .ops = &imx296_ctrl_ops,
++        .id = TIS_SENSOR_CID_TRIGGER_MODE,
++        .name = "External Trigger Enable",
++        .flags = 0,
++        .type = V4L2_CTRL_TYPE_BOOLEAN,
++        .def = 0,
++        .min = 0,
++        .max = 1,
++        .step = 1
++    };
++    sensor->exttrigger = v4l2_ctrl_new_custom(&sensor->ctrls, &cfg, sensor);
++    if (!sensor->exttrigger) {
++        dev_err(sensor->dev, "Failed to add trigger control");
++		v4l2_ctrl_handler_free(&sensor->ctrls);
++        return -EINVAL;
++    }
++
++
+ 	v4l2_ctrl_new_fwnode_properties(&sensor->ctrls, &imx296_ctrl_ops,
+ 					&props);
+ 

@@ -1,0 +1,114 @@
+From c33e5da8361c39113f7e7ed1c19ce0c0dc77fbef Mon Sep 17 00:00:00 2001
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Date: Sun, 20 Feb 2022 09:44:05 +0200
+Subject: [PATCH] arm64: dts: imx8mp: Add overlays for ISP instances
+
+Add two overlay to enable each ISP instance. The ISP is wired directly
+to the CSIS for now, bypassing the ISI completely.
+
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+---
+ arch/arm64/boot/dts/freescale/Makefile        |  2 ++
+ .../arm64/boot/dts/freescale/imx8mp-isp0.dtso | 36 +++++++++++++++++++
+ .../arm64/boot/dts/freescale/imx8mp-isp1.dtso | 36 +++++++++++++++++++
+ 3 files changed, 74 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-isp0.dtso
+ create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-isp1.dtso
+
+diff --git a/arch/arm64/boot/dts/freescale/Makefile b/arch/arm64/boot/dts/freescale/Makefile
+index bd443c2bc5a4..bc67ffa357a6 100644
+--- a/arch/arm64/boot/dts/freescale/Makefile
++++ b/arch/arm64/boot/dts/freescale/Makefile
+@@ -170,6 +170,8 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mp-dhcom-pdk2.dtb
+ dtb-$(CONFIG_ARCH_MXC) += imx8mp-dhcom-pdk3.dtb
+ dtb-$(CONFIG_ARCH_MXC) += imx8mp-evk.dtb
+ dtb-$(CONFIG_ARCH_MXC) += imx8mp-icore-mx8mp-edimm2.2.dtb
++dtb-$(CONFIG_ARCH_MXC) += imx8mp-isp0.dtbo
++dtb-$(CONFIG_ARCH_MXC) += imx8mp-isp1.dtbo
+ dtb-$(CONFIG_ARCH_MXC) += imx8mp-msc-sm2s-ep1.dtb
+ dtb-$(CONFIG_ARCH_MXC) += imx8mp-navqp.dtb
+ dtb-$(CONFIG_ARCH_MXC) += imx8mp-phyboard-pollux-rdk.dtb
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp-isp0.dtso b/arch/arm64/boot/dts/freescale/imx8mp-isp0.dtso
+new file mode 100644
+index 000000000000..cf394ed224ab
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx8mp-isp0.dtso
+@@ -0,0 +1,36 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright 2022 Ideas on Board Oy
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/media/video-interfaces.h>
++
++&isi_0 {
++	status = "disabled";
++
++	ports {
++		port@0 {
++			/delete-node/ endpoint;
++		};
++	};
++};
++
++&isp_0 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			isp0_in: endpoint {
++				bus-type = <MEDIA_BUS_TYPE_PARALLEL>;
++				remote-endpoint = <&mipi_csi_0_out>;
++			};
++		};
++	};
++};
++
++&mipi_csi_0_out {
++	remote-endpoint = <&isp0_in>;
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp-isp1.dtso b/arch/arm64/boot/dts/freescale/imx8mp-isp1.dtso
+new file mode 100644
+index 000000000000..14e2e7b2617f
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx8mp-isp1.dtso
+@@ -0,0 +1,36 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright 2022 Ideas on Board Oy
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/media/video-interfaces.h>
++
++&isi_0 {
++	status = "disabled";
++
++	ports {
++		port@1 {
++			/delete-node/ endpoint;
++		};
++	};
++};
++
++&isp_1 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			isp1_in: endpoint {
++				bus-type = <MEDIA_BUS_TYPE_PARALLEL>;
++				remote-endpoint = <&mipi_csi_1_out>;
++			};
++		};
++	};
++};
++
++&mipi_csi_1_out {
++	remote-endpoint = <&isp1_in>;
++};
