@@ -1,0 +1,28 @@
+From c18e4aca40502d6b9363e480e6aab2ce48e50ab4 Mon Sep 17 00:00:00 2001
+From: Arne Caspari <arne.caspari@theimagingsource.com>
+Date: Fri, 30 Aug 2024 14:58:54 +0200
+Subject: [PATCH] Set full-hd mode in the tdxarg
+
+---
+ include/configs/verdin-imx8mp.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/include/configs/verdin-imx8mp.h b/include/configs/verdin-imx8mp.h
+index 0b88e95603..ccd307e771 100644
+--- a/include/configs/verdin-imx8mp.h
++++ b/include/configs/verdin-imx8mp.h
+@@ -35,10 +35,14 @@
+ 	func(DHCP, dhcp, na)
+ #include <config_distro_bootcmd.h>
+ 
++#define VIDEO_ENV_SETTINGS \
++    "tdxargs=drm.edid_firmware=edid/full-hd.edid\0"
++
+ /* Initial environment variables */
+ #define CFG_EXTRA_ENV_SETTINGS \
+ 	BOOTENV \
+ 	MEM_LAYOUT_ENV_SETTINGS \
++    VIDEO_ENV_SETTINGS \
+ 	"boot_script_dhcp=boot.scr\0" \
+ 	"console=ttymxc2\0" \
+ 	"fdt_board=dev\0" \
