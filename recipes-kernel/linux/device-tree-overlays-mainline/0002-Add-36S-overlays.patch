@@ -1,0 +1,973 @@
+From 912bc70a7450c0592c23fe6a8b60088ef33ed531 Mon Sep 17 00:00:00 2001
+From: Arne Caspari <arne.caspari@theimagingsource.com>
+Date: Fri, 16 Aug 2024 16:22:03 +0200
+Subject: [PATCH] Add 36S overlays
+
+---
+ overlays/verdin-imx8mp-mallow_isi_ar0521.dts  |  61 +++++++
+ overlays/verdin-imx8mp-mallow_isi_imx290.dts  |  63 +++++++
+ overlays/verdin-imx8mp-mallow_isi_imx296.dts  |  58 +++++++
+ overlays/verdin-imx8mp-mallow_isp_ar0521.dts  |  76 +++++++++
+ overlays/verdin-imx8mp-mallow_isp_imx290.dts  |  78 +++++++++
+ .../verdin-imx8mp-tiscb_isi_2x-imx296.dts     | 116 +++++++++++++
+ .../verdin-imx8mp-tiscb_isp_2x-ar0521.dts     | 145 ++++++++++++++++
+ .../verdin-imx8mp-tiscb_isp_2x-imx290.dts     | 157 ++++++++++++++++++
+ .../verdin-imx8mp-tiscb_isp_2x-imx296.dts     | 139 ++++++++++++++++
+ 9 files changed, 893 insertions(+)
+ create mode 100644 overlays/verdin-imx8mp-mallow_isi_ar0521.dts
+ create mode 100644 overlays/verdin-imx8mp-mallow_isi_imx290.dts
+ create mode 100644 overlays/verdin-imx8mp-mallow_isi_imx296.dts
+ create mode 100644 overlays/verdin-imx8mp-mallow_isp_ar0521.dts
+ create mode 100644 overlays/verdin-imx8mp-mallow_isp_imx290.dts
+ create mode 100644 overlays/verdin-imx8mp-tiscb_isi_2x-imx296.dts
+ create mode 100644 overlays/verdin-imx8mp-tiscb_isp_2x-ar0521.dts
+ create mode 100644 overlays/verdin-imx8mp-tiscb_isp_2x-imx290.dts
+ create mode 100644 overlays/verdin-imx8mp-tiscb_isp_2x-imx296.dts
+
+diff --git a/overlays/verdin-imx8mp-mallow_isi_ar0521.dts b/overlays/verdin-imx8mp-mallow_isi_ar0521.dts
+new file mode 100644
+index 0000000..75c2320
+--- /dev/null
++++ b/overlays/verdin-imx8mp-mallow_isi_ar0521.dts
+@@ -0,0 +1,61 @@
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "toradex,verdin-imx8mp";
++};
++
++&{/} {
++    tis_36s_clock: tis-36s-clock {
++        compatible = "fixed-clock";
++        #clock-cells = <0>;
++        clock-frequency = <25000000>;
++        clock-accuracy = <100>;
++    };
++};
++
++&i2c3 {
++    #address-cells = <1>;
++    #size-cells = <0>;
++    status = "okay";
++
++    camera@36 {
++        compatible = "onnn,ar0521";
++        reg = <0x36>;
++        status = "okay";
++
++        clocks = <&tis_36s_clock>;
++        clock-names = "extclk";
++        clock-frequency = <25000000>;
++
++        orientation = <0>;
++        rotation = <0>;
++
++        port {
++            ar0521_out: endpoint {
++                clock-lanes = <0>;
++                data-lanes = <1 2 3 4>;
++                link-frequencies = /bits/ 64 <184000000>;
++                remote-endpoint = <&mipi_csi0_ep>;
++            };
++        };
++    };
++};
++
++&isi_0 {
++    status = "okay";
++};
++
++&mipi_csi_0 {
++    status = "okay";
++
++    ports {
++        port@0 {
++            mipi_csi0_ep: endpoint {
++				remote-endpoint = <&ar0521_out>;
++				data-lanes = <1 2 3 4>;
++            };
++        };
++    };
++};
++
+diff --git a/overlays/verdin-imx8mp-mallow_isi_imx290.dts b/overlays/verdin-imx8mp-mallow_isi_imx290.dts
+new file mode 100644
+index 0000000..e77bbbc
+--- /dev/null
++++ b/overlays/verdin-imx8mp-mallow_isi_imx290.dts
+@@ -0,0 +1,63 @@
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "toradex,verdin-imx8mp";
++};
++
++&{/} {
++    tis_36sx_clock: tis-36sx-clock {
++        compatible = "fixed-clock";
++        #clock-cells = <0>;
++        clock-frequency = <37125000>;
++        clock-accuracy = <100>;
++    };
++};
++
++&i2c3 {
++    #address-cells = <1>;
++    #size-cells = <0>;
++    status = "okay";
++
++    camera@1a {
++        compatible = "sony,imx290lqr";
++        reg = <0x1a>;
++        status = "okay";
++
++        clocks = <&tis_36sx_clock>;
++        clock-names = "xclk";
++        clock-frequency = <37125000>;
++
++        vddd-supply = <&reg_3p3v>;
++
++        orientation = <0>;
++        rotation = <0>;
++
++        port {
++            imx290_out: endpoint {
++                data-lanes = <1 2 3 4>;
++                link-frequencies = /bits/ 64 <148500000 222750000>;
++                remote-endpoint = <&mipi_csi0_ep>;
++            };
++        };
++    };
++};
++
++&isi_0 {
++    status = "okay";
++};
++
++&mipi_csi_0 {
++    status = "okay";
++
++    ports {
++        port@0 {
++            mipi_csi0_ep: endpoint {
++                remote-endpoint = <&imx290_out>;
++				data-lanes = <1 2 3 4>;
++            };
++        };
++    };
++};
++
++
+diff --git a/overlays/verdin-imx8mp-mallow_isi_imx296.dts b/overlays/verdin-imx8mp-mallow_isi_imx296.dts
+new file mode 100644
+index 0000000..9dab3d0
+--- /dev/null
++++ b/overlays/verdin-imx8mp-mallow_isi_imx296.dts
+@@ -0,0 +1,58 @@
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "toradex,verdin-imx8mp";
++};
++
++&{/} {
++    tis_36sx_clock: tis-36sx-clock {
++        compatible = "fixed-clock";
++        #clock-cells = <0>;
++        clock-frequency = <37125000>;
++        clock-accuracy = <100>;
++    };
++};
++
++&i2c3 {
++    #address-cells = <1>;
++    #size-cells = <0>;
++    status = "okay";
++
++    camera@1a {
++        compatible = "sony,imx296lq";
++        reg = <0x1a>;
++
++        clocks = <&tis_36sx_clock>;
++        clock-names = "inck";
++
++        orientation = <0>;
++        rotation = <0>;
++
++        port {
++            imx296_out: endpoint {
++                data-lanes = <1>;
++                remote-endpoint = <&mipi_csi0_ep>;
++            };
++        };
++    };
++};
++
++&isi_0 {
++    status = "okay";
++};
++
++&mipi_csi_0 {
++    status = "okay";
++
++    ports {
++        port@0 {
++            mipi_csi0_ep: endpoint {
++                remote-endpoint = <&imx296_out>;
++                data-lanes = <1>;
++            };
++        };
++    };
++};
++
++
+diff --git a/overlays/verdin-imx8mp-mallow_isp_ar0521.dts b/overlays/verdin-imx8mp-mallow_isp_ar0521.dts
+new file mode 100644
+index 0000000..9645bcb
+--- /dev/null
++++ b/overlays/verdin-imx8mp-mallow_isp_ar0521.dts
+@@ -0,0 +1,76 @@
++/dts-v1/;
++/plugin/;
++
++#include "dt-bindings/media/video-interfaces.h"
++
++/ {
++	compatible = "toradex,verdin-imx8mp";
++};
++
++&{/} {
++    tis_36s_clock: tis-36s-clock {
++        compatible = "fixed-clock";
++        #clock-cells = <0>;
++        clock-frequency = <25000000>;
++        clock-accuracy = <100>;
++    };
++};
++
++&i2c3 {
++    #address-cells = <1>;
++    #size-cells = <0>;
++    status = "okay";
++
++    camera@36 {
++        compatible = "onnn,ar0521";
++        reg = <0x36>;
++        status = "okay";
++
++        clocks = <&tis_36s_clock>;
++        clock-names = "extclk";
++        clock-frequency = <25000000>;
++
++        orientation = <0>;
++        rotation = <0>;
++
++        port {
++            ar0521_out: endpoint {
++                clock-lanes = <0>;
++                data-lanes = <1 2 3 4>;
++                link-frequencies = /bits/ 64 <184000000>;
++                remote-endpoint = <&mipi_csi0_ep>;
++            };
++        };
++    };
++};
++
++&isi_0 {
++    status = "disabled";
++};
++
++&isp_0 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			isp0_in: endpoint {
++				bus-type = <MEDIA_BUS_TYPE_PARALLEL>;
++				remote-endpoint = <&mipi_csi_0_out>;
++			};
++		};
++	};
++};
++
++&mipi_csi_0 {
++    status = "okay";
++
++    ports {
++        port@0 {
++            mipi_csi0_ep: endpoint {
++				remote-endpoint = <&ar0521_out>;
++				data-lanes = <1 2 3 4>;
++            };
++        };
++    };
++};
++
+diff --git a/overlays/verdin-imx8mp-mallow_isp_imx290.dts b/overlays/verdin-imx8mp-mallow_isp_imx290.dts
+new file mode 100644
+index 0000000..ed53e0f
+--- /dev/null
++++ b/overlays/verdin-imx8mp-mallow_isp_imx290.dts
+@@ -0,0 +1,78 @@
++/dts-v1/;
++/plugin/;
++
++#include "dt-bindings/media/video-interfaces.h"
++
++/ {
++	compatible = "toradex,verdin-imx8mp";
++};
++
++&{/} {
++    tis_36sx_clock: tis-36sx-clock {
++        compatible = "fixed-clock";
++        #clock-cells = <0>;
++        clock-frequency = <37125000>;
++        clock-accuracy = <100>;
++    };
++};
++
++&i2c3 {
++    #address-cells = <1>;
++    #size-cells = <0>;
++    status = "okay";
++
++    camera@1a {
++        compatible = "sony,imx290lqr";
++        reg = <0x1a>;
++        status = "okay";
++
++        clocks = <&tis_36sx_clock>;
++        clock-names = "xclk";
++        clock-frequency = <37125000>;
++
++        vddd-supply = <&reg_3p3v>;
++
++        orientation = <0>;
++        rotation = <0>;
++
++        port {
++            imx290_out: endpoint {
++                data-lanes = <1 2 3 4>;
++                link-frequencies = /bits/ 64 <148500000 222750000>;
++                remote-endpoint = <&mipi_csi0_ep>;
++            };
++        };
++    };
++};
++
++&isi_0 {
++    status = "disabled";
++};
++
++&isp_0 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			isp0_in: endpoint {
++				bus-type = <MEDIA_BUS_TYPE_PARALLEL>;
++				remote-endpoint = <&mipi_csi_0_out>;
++			};
++		};
++	};
++};
++
++&mipi_csi_0 {
++    status = "okay";
++
++    ports {
++        port@0 {
++            mipi_csi0_ep: endpoint {
++                remote-endpoint = <&imx290_out>;
++				data-lanes = <1 2 3 4>;
++            };
++        };
++    };
++};
++
++
+diff --git a/overlays/verdin-imx8mp-tiscb_isi_2x-imx296.dts b/overlays/verdin-imx8mp-tiscb_isi_2x-imx296.dts
+new file mode 100644
+index 0000000..a473d06
+--- /dev/null
++++ b/overlays/verdin-imx8mp-tiscb_isi_2x-imx296.dts
+@@ -0,0 +1,116 @@
++// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
++/*
++ * Copyright 2024 The Imaging Source
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include "dt-bindings/media/video-interfaces.h"
++
++&{/} {
++    tis_36sx_clock: tis-36sx-clock {
++        compatible = "fixed-clock";
++        #clock-cells = <0>;
++        clock-frequency = <37125000>;
++        clock-accuracy = <100>;
++    };
++    cam_i2cmux {
++        compatible = "i2c-mux-gpio";
++        #address-cells = <1>;
++        #size-cells = <0>;
++        mux-gpios = <&gpio4 28 0>;
++        i2c-parent = <&i2c3>;
++
++        i2c@0 {
++            reg = <0>;
++            #address-cells = <1>;
++            #size-cells = <0>;
++
++            camera@1a {
++                compatible = "sony,imx296lq";
++                reg = <0x1a>;
++
++                clocks = <&tis_36sx_clock>;
++                clock-names = "inck";
++
++                orientation = <0>;
++                rotation = <0>;
++
++                port {
++                    camera_out1: endpoint {
++                        data-lanes = <1>;
++                        remote-endpoint = <&mipi_csi1_ep>;
++                    };
++                };
++            };
++        };
++        i2c@1 {
++            reg = <1>;
++            #address-cells = <1>;
++            #size-cells = <0>;
++
++            camera@1a {
++                compatible = "sony,imx296lq";
++                reg = <0x1a>;
++
++                clocks = <&tis_36sx_clock>;
++                clock-names = "inck";
++
++                orientation = <0>;
++                rotation = <0>;
++
++                port {
++                    camera_out0: endpoint {
++                        data-lanes = <1>;
++                        remote-endpoint = <&mipi_csi0_ep>;
++                    };
++                };
++            };
++        };
++    };
++};
++
++
++&isi_0 {
++	status = "okay";
++};
++
++&isp_0 {
++	status = "disabled";
++
++};
++
++&isp_1 {
++	status = "disabled";
++
++};
++
++
++&mipi_csi_0 {
++	status = "okay";
++
++	ports {
++		port@0 {
++			mipi_csi0_ep: endpoint {
++				remote-endpoint = <&camera_out0>;
++				data-lanes = <1>;
++                // data-lanes = <1 2>;
++			};
++		};
++	};
++};
++
++&mipi_csi_1 {
++	status = "okay";
++
++	ports {
++		port@0 {
++			mipi_csi1_ep: endpoint {
++				remote-endpoint = <&camera_out1>;
++				data-lanes = <1>;
++                // data-lanes = <1 2>;
++			};
++		};
++	};
++};
+diff --git a/overlays/verdin-imx8mp-tiscb_isp_2x-ar0521.dts b/overlays/verdin-imx8mp-tiscb_isp_2x-ar0521.dts
+new file mode 100644
+index 0000000..9635961
+--- /dev/null
++++ b/overlays/verdin-imx8mp-tiscb_isp_2x-ar0521.dts
+@@ -0,0 +1,145 @@
++// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
++/*
++ * Copyright 2024 The Imaging Source
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include "dt-bindings/media/video-interfaces.h"
++
++&{/} {
++    tis_36sx_clock: tis-36sx-clock {
++        compatible = "fixed-clock";
++        #clock-cells = <0>;
++        clock-frequency = <25000000>;
++        clock-accuracy = <100>;
++    };
++    cam_i2cmux {
++        compatible = "i2c-mux-gpio";
++        #address-cells = <1>;
++        #size-cells = <0>;
++        mux-gpios = <&gpio4 28 0>;
++        i2c-parent = <&i2c3>;
++
++        i2c@0 {
++            reg = <0>;
++            #address-cells = <1>;
++            #size-cells = <0>;
++
++            camera@1a {
++                compatible = "onnn,ar0521";
++                reg = <0x36>;
++                status = "okay";
++
++                clocks = <&tis_36s_clock>;
++                clock-names = "extclk";
++                clock-frequency = <25000000>;
++
++                orientation = <0>;
++                rotation = <0>;
++
++                port {
++                    camera_out1: endpoint {
++                        data-lanes = <1>;
++                        remote-endpoint = <&mipi_csi1_ep>;
++                    };
++                };
++            };
++        };
++        i2c@1 {
++            reg = <1>;
++            #address-cells = <1>;
++            #size-cells = <0>;
++
++            camera@1a {
++                compatible = "onnn,ar0521";
++                reg = <0x36>;
++                status = "okay";
++
++                clocks = <&tis_36s_clock>;
++                clock-names = "extclk";
++                clock-frequency = <25000000>;
++
++                orientation = <0>;
++                rotation = <0>;
++
++                port {
++                    camera_out0: endpoint {
++                        data-lanes = <1>;
++                        remote-endpoint = <&mipi_csi0_ep>;
++                    };
++                };
++            };
++        };
++    };
++};
++
++
++&isi_0 {
++	status = "disabled";
++};
++
++&isp_0 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			isp0_in: endpoint {
++				bus-type = <MEDIA_BUS_TYPE_PARALLEL>;
++				remote-endpoint = <&mipi_csi_0_out>;
++			};
++		};
++	};
++};
++
++&isp_1 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			isp1_in: endpoint {
++				bus-type = <MEDIA_BUS_TYPE_PARALLEL>;
++				remote-endpoint = <&mipi_csi_1_out>;
++			};
++		};
++	};
++};
++
++&mipi_csi_0_out {
++	remote-endpoint = <&isp0_in>;
++};
++
++&mipi_csi_1_out {
++	remote-endpoint = <&isp1_in>;
++};
++
++&mipi_csi_0 {
++	status = "okay";
++
++	ports {
++		port@0 {
++			mipi_csi0_ep: endpoint {
++				remote-endpoint = <&camera_out0>;
++                clock-lanes = <0>;
++                data-lanes = <1 2 3 4>;
++                link-frequencies = /bits/ 64 <184000000>;
++			};
++		};
++	};
++};
++
++&mipi_csi_1 {
++	status = "okay";
++
++	ports {
++		port@0 {
++			mipi_csi1_ep: endpoint {
++				remote-endpoint = <&camera_out1>;
++                clock-lanes = <0>;
++                data-lanes = <1 2 3 4>;
++                link-frequencies = /bits/ 64 <184000000>;
++			};
++		};
++	};
++};
+diff --git a/overlays/verdin-imx8mp-tiscb_isp_2x-imx290.dts b/overlays/verdin-imx8mp-tiscb_isp_2x-imx290.dts
+new file mode 100644
+index 0000000..d7c0427
+--- /dev/null
++++ b/overlays/verdin-imx8mp-tiscb_isp_2x-imx290.dts
+@@ -0,0 +1,157 @@
++// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
++/*
++ * Copyright 2024 The Imaging Source
++ */
++
++/dts-v1/;
++/plugin/;
++
++&{/} {
++    tis_36sx_clock: tis-36sx-clock {
++        compatible = "fixed-clock";
++        #clock-cells = <0>;
++        clock-frequency = <37125000>;
++        clock-accuracy = <100>;
++    };
++    cam_i2cmux {
++        compatible = "i2c-mux-gpio";
++        #address-cells = <1>;
++        #size-cells = <0>;
++        mux-gpios = <&gpio4 28 0>;
++        i2c-parent = <&i2c3>;
++
++        i2c@0 {
++            reg = <0>;
++            #address-cells = <1>;
++            #size-cells = <0>;
++
++            camera@1a {
++                compatible = "sony,imx290lqr";
++                reg = <0x1a>;
++                status = "okay";
++
++                clocks = <&tis_36sx_clock>;
++                clock-names = "xclk";
++                clock-frequency = <37125000>;
++
++                vddd-supply = <&reg_3p3v>;
++
++                orientation = <0>;
++                rotation = <0>;
++
++                port {
++                    imx290_out1: endpoint {
++                        clock-lanes = <0>;
++                        data-lanes = <1 2 3 4>;
++                        link-frequencies = /bits/ 64 <148500000 222750000>;
++                        // data-lanes = <1 2>;
++                        // link-frequencies = /bits/ 64 <445500000 297000000>;
++                        remote-endpoint = <&mipi_csi1_ep>;
++                    };
++                };
++            };
++        };
++        i2c@1 {
++            reg = <1>;
++            #address-cells = <1>;
++            #size-cells = <0>;
++            
++            camera@1a {
++                compatible = "sony,imx290lqr";
++                reg = <0x1a>;
++                status = "okay";
++
++                clocks = <&tis_36sx_clock>;
++                clock-names = "xclk";
++                clock-frequency = <37125000>;
++
++                vddd-supply = <&reg_3p3v>;
++
++                orientation = <0>;
++                rotation = <0>;
++
++                port {
++                    imx290_out0: endpoint {
++                        clock-lanes = <0>;
++                        data-lanes = <1 2 3 4>;
++                        link-frequencies = /bits/ 64 <148500000 222750000>;
++                        // data-lanes = <1 2>;
++                        // link-frequencies = /bits/ 64 <445500000 297000000>;
++                        remote-endpoint = <&mipi_csi0_ep>;
++                    };
++                };
++            };
++        };
++    };
++};
++
++
++&isi_0 {
++	status = "disabled";
++};
++
++&isp_0 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			isp0_in: endpoint {
++                // from dt-bindings/media/video-interfaces.h:
++                // #define MEDIA_BUS_TYPE_PARALLEL                 5
++				bus-type = <5>;
++				remote-endpoint = <&mipi_csi_0_out>;
++			};
++		};
++	};
++};
++
++&isp_1 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			isp1_in: endpoint {
++                // from dt-bindings/media/video-interfaces.h:
++                // #define MEDIA_BUS_TYPE_PARALLEL                 5
++				bus-type = <5>;
++				remote-endpoint = <&mipi_csi_1_out>;
++			};
++		};
++	};
++};
++
++&mipi_csi_0_out {
++	remote-endpoint = <&isp0_in>;
++};
++
++&mipi_csi_1_out {
++	remote-endpoint = <&isp1_in>;
++};
++
++&mipi_csi_0 {
++	status = "okay";
++
++	ports {
++		port@0 {
++			mipi_csi0_ep: endpoint {
++				remote-endpoint = <&imx290_out0>;
++				data-lanes = <1 2 3 4>;
++                // data-lanes = <1 2>;
++			};
++		};
++	};
++};
++
++&mipi_csi_1 {
++	status = "okay";
++
++	ports {
++		port@0 {
++			mipi_csi1_ep: endpoint {
++				remote-endpoint = <&imx290_out1>;
++				data-lanes = <1 2 3 4>;
++                // data-lanes = <1 2>;
++			};
++		};
++	};
++};
+diff --git a/overlays/verdin-imx8mp-tiscb_isp_2x-imx296.dts b/overlays/verdin-imx8mp-tiscb_isp_2x-imx296.dts
+new file mode 100644
+index 0000000..f1e0505
+--- /dev/null
++++ b/overlays/verdin-imx8mp-tiscb_isp_2x-imx296.dts
+@@ -0,0 +1,139 @@
++// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
++/*
++ * Copyright 2024 The Imaging Source
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include "dt-bindings/media/video-interfaces.h"
++
++&{/} {
++    tis_36sx_clock: tis-36sx-clock {
++        compatible = "fixed-clock";
++        #clock-cells = <0>;
++        clock-frequency = <37125000>;
++        clock-accuracy = <100>;
++    };
++    cam_i2cmux {
++        compatible = "i2c-mux-gpio";
++        #address-cells = <1>;
++        #size-cells = <0>;
++        mux-gpios = <&gpio4 28 0>;
++        i2c-parent = <&i2c3>;
++
++        i2c@0 {
++            reg = <0>;
++            #address-cells = <1>;
++            #size-cells = <0>;
++
++            camera@1a {
++                compatible = "sony,imx296lq";
++                reg = <0x1a>;
++
++                clocks = <&tis_36sx_clock>;
++                clock-names = "inck";
++
++                orientation = <0>;
++                rotation = <0>;
++
++                port {
++                    camera_out1: endpoint {
++                        data-lanes = <1>;
++                        remote-endpoint = <&mipi_csi1_ep>;
++                    };
++                };
++            };
++        };
++        i2c@1 {
++            reg = <1>;
++            #address-cells = <1>;
++            #size-cells = <0>;
++
++            camera@1a {
++                compatible = "sony,imx296lq";
++                reg = <0x1a>;
++
++                clocks = <&tis_36sx_clock>;
++                clock-names = "inck";
++
++                orientation = <0>;
++                rotation = <0>;
++
++                port {
++                    camera_out0: endpoint {
++                        data-lanes = <1>;
++                        remote-endpoint = <&mipi_csi0_ep>;
++                    };
++                };
++            };
++        };
++    };
++};
++
++
++&isi_0 {
++	status = "disabled";
++};
++
++&isp_0 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			isp0_in: endpoint {
++				bus-type = <MEDIA_BUS_TYPE_PARALLEL>;
++				remote-endpoint = <&mipi_csi_0_out>;
++			};
++		};
++	};
++};
++
++&isp_1 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			isp1_in: endpoint {
++				bus-type = <MEDIA_BUS_TYPE_PARALLEL>;
++				remote-endpoint = <&mipi_csi_1_out>;
++			};
++		};
++	};
++};
++
++&mipi_csi_0_out {
++	remote-endpoint = <&isp0_in>;
++};
++
++&mipi_csi_1_out {
++	remote-endpoint = <&isp1_in>;
++};
++
++&mipi_csi_0 {
++	status = "okay";
++
++	ports {
++		port@0 {
++			mipi_csi0_ep: endpoint {
++				remote-endpoint = <&camera_out0>;
++				data-lanes = <1>;
++                // data-lanes = <1 2>;
++			};
++		};
++	};
++};
++
++&mipi_csi_1 {
++	status = "okay";
++
++	ports {
++		port@0 {
++			mipi_csi1_ep: endpoint {
++				remote-endpoint = <&camera_out1>;
++				data-lanes = <1>;
++                // data-lanes = <1 2>;
++			};
++		};
++	};
++};

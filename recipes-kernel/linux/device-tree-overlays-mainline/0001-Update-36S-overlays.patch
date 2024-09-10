@@ -1,0 +1,253 @@
+From bdcae2993ae11d5a79de1fae7094063a1e3bff8f Mon Sep 17 00:00:00 2001
+From: Arne Caspari <arne.caspari@theimagingsource.com>
+Date: Fri, 16 Aug 2024 16:19:17 +0200
+Subject: [PATCH] Update 36S overlays
+
+---
+ overlays/Makefile                            | 13 +++-
+ overlays/verdin-imx8mp-mallow_ar0521.dts     | 61 -------------------
+ overlays/verdin-imx8mp-mallow_imx290.dts     | 63 --------------------
+ overlays/verdin-imx8mp-mallow_imx296.dts     | 58 ------------------
+ overlays/verdin-imx8mp-mallow_isp_imx296.dts |  1 -
+ 5 files changed, 11 insertions(+), 185 deletions(-)
+ delete mode 100644 overlays/verdin-imx8mp-mallow_ar0521.dts
+ delete mode 100644 overlays/verdin-imx8mp-mallow_imx290.dts
+ delete mode 100644 overlays/verdin-imx8mp-mallow_imx296.dts
+
+diff --git a/overlays/Makefile b/overlays/Makefile
+index 52b1759..aee9037 100644
+--- a/overlays/Makefile
++++ b/overlays/Makefile
+@@ -69,9 +69,18 @@ dtb-y += verdin-imx8mp_dsi-to-lvds_panel-cap-touch-10inch-lvds_overlay.dtbo
+ dtb-y += verdin-imx8mp_nau8822-btl_overlay.dtbo
+ dtb-y += verdin-imx8mp_panel-cap-touch-10inch-dsi_overlay.dtbo
+ dtb-y += verdin-imx8mp_spidev_overlay.dtbo
+-dtb-y += verdin-imx8mp-mallow_imx296.dtbo
+-dtb-y += verdin-imx8mp-mallow_ar0521.dtbo
++
++dtb-y += verdin-imx8mp-mallow_isi_imx296.dtbo
++dtb-y += verdin-imx8mp-mallow_isi_imx296.dtbo
++dtb-y += verdin-imx8mp-mallow_isi_ar0521.dtbo
++
+ dtb-y += verdin-imx8mp-mallow_isp_imx296.dtbo
++dtb-y += verdin-imx8mp-mallow_isp_imx296.dtbo
++dtb-y += verdin-imx8mp-mallow_isp_ar0521.dtbo
++
++dtb-y += verdin-imx8mp-tiscb_isp_2x-imx290.dtbo
++dtb-y += verdin-imx8mp-tiscb_isp_2x-imx296.dtbo
++dtb-y += verdin-imx8mp-tiscb_isp_2x-ar0521.dtbo
+ 
+ targets += $(dtb-y)
+ always  := $(dtb-y)
+diff --git a/overlays/verdin-imx8mp-mallow_ar0521.dts b/overlays/verdin-imx8mp-mallow_ar0521.dts
+deleted file mode 100644
+index 75c2320..0000000
+--- a/overlays/verdin-imx8mp-mallow_ar0521.dts
++++ /dev/null
+@@ -1,61 +0,0 @@
+-/dts-v1/;
+-/plugin/;
+-
+-/ {
+-	compatible = "toradex,verdin-imx8mp";
+-};
+-
+-&{/} {
+-    tis_36s_clock: tis-36s-clock {
+-        compatible = "fixed-clock";
+-        #clock-cells = <0>;
+-        clock-frequency = <25000000>;
+-        clock-accuracy = <100>;
+-    };
+-};
+-
+-&i2c3 {
+-    #address-cells = <1>;
+-    #size-cells = <0>;
+-    status = "okay";
+-
+-    camera@36 {
+-        compatible = "onnn,ar0521";
+-        reg = <0x36>;
+-        status = "okay";
+-
+-        clocks = <&tis_36s_clock>;
+-        clock-names = "extclk";
+-        clock-frequency = <25000000>;
+-
+-        orientation = <0>;
+-        rotation = <0>;
+-
+-        port {
+-            ar0521_out: endpoint {
+-                clock-lanes = <0>;
+-                data-lanes = <1 2 3 4>;
+-                link-frequencies = /bits/ 64 <184000000>;
+-                remote-endpoint = <&mipi_csi0_ep>;
+-            };
+-        };
+-    };
+-};
+-
+-&isi_0 {
+-    status = "okay";
+-};
+-
+-&mipi_csi_0 {
+-    status = "okay";
+-
+-    ports {
+-        port@0 {
+-            mipi_csi0_ep: endpoint {
+-				remote-endpoint = <&ar0521_out>;
+-				data-lanes = <1 2 3 4>;
+-            };
+-        };
+-    };
+-};
+-
+diff --git a/overlays/verdin-imx8mp-mallow_imx290.dts b/overlays/verdin-imx8mp-mallow_imx290.dts
+deleted file mode 100644
+index e77bbbc..0000000
+--- a/overlays/verdin-imx8mp-mallow_imx290.dts
++++ /dev/null
+@@ -1,63 +0,0 @@
+-/dts-v1/;
+-/plugin/;
+-
+-/ {
+-	compatible = "toradex,verdin-imx8mp";
+-};
+-
+-&{/} {
+-    tis_36sx_clock: tis-36sx-clock {
+-        compatible = "fixed-clock";
+-        #clock-cells = <0>;
+-        clock-frequency = <37125000>;
+-        clock-accuracy = <100>;
+-    };
+-};
+-
+-&i2c3 {
+-    #address-cells = <1>;
+-    #size-cells = <0>;
+-    status = "okay";
+-
+-    camera@1a {
+-        compatible = "sony,imx290lqr";
+-        reg = <0x1a>;
+-        status = "okay";
+-
+-        clocks = <&tis_36sx_clock>;
+-        clock-names = "xclk";
+-        clock-frequency = <37125000>;
+-
+-        vddd-supply = <&reg_3p3v>;
+-
+-        orientation = <0>;
+-        rotation = <0>;
+-
+-        port {
+-            imx290_out: endpoint {
+-                data-lanes = <1 2 3 4>;
+-                link-frequencies = /bits/ 64 <148500000 222750000>;
+-                remote-endpoint = <&mipi_csi0_ep>;
+-            };
+-        };
+-    };
+-};
+-
+-&isi_0 {
+-    status = "okay";
+-};
+-
+-&mipi_csi_0 {
+-    status = "okay";
+-
+-    ports {
+-        port@0 {
+-            mipi_csi0_ep: endpoint {
+-                remote-endpoint = <&imx290_out>;
+-				data-lanes = <1 2 3 4>;
+-            };
+-        };
+-    };
+-};
+-
+-
+diff --git a/overlays/verdin-imx8mp-mallow_imx296.dts b/overlays/verdin-imx8mp-mallow_imx296.dts
+deleted file mode 100644
+index 9dab3d0..0000000
+--- a/overlays/verdin-imx8mp-mallow_imx296.dts
++++ /dev/null
+@@ -1,58 +0,0 @@
+-/dts-v1/;
+-/plugin/;
+-
+-/ {
+-	compatible = "toradex,verdin-imx8mp";
+-};
+-
+-&{/} {
+-    tis_36sx_clock: tis-36sx-clock {
+-        compatible = "fixed-clock";
+-        #clock-cells = <0>;
+-        clock-frequency = <37125000>;
+-        clock-accuracy = <100>;
+-    };
+-};
+-
+-&i2c3 {
+-    #address-cells = <1>;
+-    #size-cells = <0>;
+-    status = "okay";
+-
+-    camera@1a {
+-        compatible = "sony,imx296lq";
+-        reg = <0x1a>;
+-
+-        clocks = <&tis_36sx_clock>;
+-        clock-names = "inck";
+-
+-        orientation = <0>;
+-        rotation = <0>;
+-
+-        port {
+-            imx296_out: endpoint {
+-                data-lanes = <1>;
+-                remote-endpoint = <&mipi_csi0_ep>;
+-            };
+-        };
+-    };
+-};
+-
+-&isi_0 {
+-    status = "okay";
+-};
+-
+-&mipi_csi_0 {
+-    status = "okay";
+-
+-    ports {
+-        port@0 {
+-            mipi_csi0_ep: endpoint {
+-                remote-endpoint = <&imx296_out>;
+-                data-lanes = <1>;
+-            };
+-        };
+-    };
+-};
+-
+-
+diff --git a/overlays/verdin-imx8mp-mallow_isp_imx296.dts b/overlays/verdin-imx8mp-mallow_isp_imx296.dts
+index 8bd85bb..0517a7f 100644
+--- a/overlays/verdin-imx8mp-mallow_isp_imx296.dts
++++ b/overlays/verdin-imx8mp-mallow_isp_imx296.dts
+@@ -57,7 +57,6 @@
+ 	};
+ };
+ 
+-
+ &mipi_csi_0 {
+     status = "okay";
+ 
