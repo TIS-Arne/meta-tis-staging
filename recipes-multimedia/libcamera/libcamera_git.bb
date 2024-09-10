@@ -8,9 +8,11 @@ LIC_FILES_CHKSUM = "\
     file://LICENSES/LGPL-2.1-or-later.txt;md5=2a4f4fd2128ea2f65047ee63fbca9f68 \
 "
 
-SRC_URI = "git://git.libcamera.org/libcamera/libcamera.git;protocol=https;branch=master"
+#SRC_URI = "git://git.libcamera.org/libcamera/libcamera.git;protocol=https;branch=master"
+SRC_URI = "git://git@gitlab.theimagingsource.com:49107/nxp-imx/libcamera.git;protocol=ssh;branch=arne"
 
-SRCREV = "aee16c06913422a0ac84ee3217f87a9795e3c2d9"
+#SRCREV = "aee16c06913422a0ac84ee3217f87a9795e3c2d9"
+SRCREV = "72647e7d851ccac1d88932799c2cb5e8a24bcb11"
 
 PE = "1"
 
@@ -22,7 +24,7 @@ DEPENDS += "${@bb.utils.contains('DISTRO_FEATURES', 'qt', 'qtbase qtbase-native'
 PACKAGES =+ "${PN}-gst"
 PACKAGES =+ "${PN}-pycamera"
 
-PACKAGECONFIG ??= "gst pycamera qcam"
+PACKAGECONFIG ??= "gst pycamera"
 PACKAGECONFIG[gst] = "-Dgstreamer=enabled,-Dgstreamer=disabled,gstreamer1.0 gstreamer1.0-plugins-base"
 PACKAGECONFIG[pycamera] = "-Dpycamera=enabled,-Dpycamera=disabled,python3 python3-pybind11"
 PACKAGECONFIG[qcam] = "-Dqcam=enabled,-Dqcam=disabled,qtbase qttools qttools-native"
@@ -42,9 +44,9 @@ RDEPENDS:${PN} = "${@bb.utils.contains('DISTRO_FEATURES', 'wayland qt', 'qtwayla
 
 inherit meson pkgconfig python3native python3-dir
 
-do_configure:prepend() {
-    sed -i -e 's|py_compile=True,||' ${S}/utils/ipc/mojo/public/tools/mojom/mojom/generate/template_expander.py
-}
+# do_configure:prepend() {
+#     sed -i -e 's|py_compile=True,||' ${S}/utils/ipc/mojo/public/tools/mojom/mojom/generate/template_expander.py
+# }
 
 do_install:append() {
     chrpath -d ${D}${libdir}/libcamera.so
