@@ -1,0 +1,629 @@
+From patchwork Sun Oct 20 15:28:18 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Mikhail Rudenko <mike.rudenko@gmail.com>
+X-Patchwork-Id: 21707
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 1AF9AC3304
+	for <parsemail@patchwork.libcamera.org>;
+	Sun, 20 Oct 2024 15:28:46 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 9ADDF65395;
+	Sun, 20 Oct 2024 17:28:45 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (2048-bit key;
+	unprotected) header.d=gmail.com header.i=@gmail.com
+	header.b="OJlUgRxo"; dkim-atps=neutral
+Received: from mail-lf1-x12e.google.com (mail-lf1-x12e.google.com
+	[IPv6:2a00:1450:4864:20::12e])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id E0D6F65379
+	for <libcamera-devel@lists.libcamera.org>;
+	Sun, 20 Oct 2024 17:28:37 +0200 (CEST)
+Received: by mail-lf1-x12e.google.com with SMTP id
+	2adb3069b0e04-539e4b7409fso3640841e87.0
+	for <libcamera-devel@lists.libcamera.org>;
+	Sun, 20 Oct 2024 08:28:37 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=gmail.com; s=20230601; t=1729438117; x=1730042917;
+	darn=lists.libcamera.org;
+	h=content-transfer-encoding:mime-version:references:in-reply-to
+	:message-id:date:subject:cc:to:from:from:to:cc:subject:date
+	:message-id:reply-to;
+	bh=fsdRqpztdFaGeJkanrNCe+tQNA7Ad8aazk7oOb+NI/U=;
+	b=OJlUgRxoaRVPBFiTp5QAo22J2LptEVb5amdRSrmFxRdxzkCI+Vy4VVbxFw/Jxdm6Cj
+	ST60YVecESkrNHpB0J98RJE5mTSc4PMrknRe+HFbi+hUHDwk1WcBknO4XVrXIjHwDvCz
+	ufsLi0RDRCo/TJDHiyTYwaYGMaKeAmiHS4PLWpwtS0GORrpJq36hwOq+qbmwyRnXVxuN
+	dyRG2snRkiME4T6XzQ7vTHFkx+68aKYgsyhzCOr+kS6A30mFDbM4RvyGIRkcgnOmyLSw
+	9whxY1DeHiVJE1fZYd+Hazg5/w9YgmglRrByPeLxv+h/jfCDrls+IUZgNFglSNsdqlYl
+	VifA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=1e100.net; s=20230601; t=1729438117; x=1730042917;
+	h=content-transfer-encoding:mime-version:references:in-reply-to
+	:message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
+	:subject:date:message-id:reply-to;
+	bh=fsdRqpztdFaGeJkanrNCe+tQNA7Ad8aazk7oOb+NI/U=;
+	b=itmeH3DNLvuaDs1iII7sxMw7n6j219wZLX0dPEuMPBxH5XzZmuLv4vu2iBOXdIZVvE
+	YknvWpLVaE5idSXuMVBwbbhR7PA3rWkYiWjeesBKX/HdxfoOcVfHPhAFcNtTZZmPD0H3
+	cb7WBuIK8lmog0d2aas8CsXXE29UMOumKH/yDJzdACYdoC0CqM209Cidg54bJ+9gXK3S
+	BuJ1omA0ECbBMzlxH42PEG9Y1kXSR6UdFyE4vV72a31ii5mMBkCcf+S5cwLFEJ7n+p9p
+	jUZK1Gyg+aFVcG709EHcXjTpNoJ9G0Ih4b1HXGX0Afob0+emBIq5MqwcW8PYbGxD2LMV
+	5djA==
+X-Gm-Message-State: AOJu0YwEdUo6rSGM0TiwOHL2Jijg2gCAZrCJYzxdkf4SV5xK0+zO1ych
+	L77gS3rVDt09Rr3vWO6QApbcjLCHNXTNOFqgxUs86VSHBLm1+DjVpU1Dlw==
+X-Google-Smtp-Source: 
+ AGHT+IHtoztCDMhr0JKj4r1ZDn3Yt9UjHA8s32jtwRaYYwiSv4EuEEYoYk80octrfa1swGcom6D7zw==
+X-Received: by 2002:a05:6512:12d3:b0:539:918c:5132 with SMTP id
+	2adb3069b0e04-53a0c620607mr4398070e87.0.1729438116608;
+	Sun, 20 Oct 2024 08:28:36 -0700 (PDT)
+Received: from localhost.localdomain
+	(static.40.223.216.95.clients.your-server.de. [95.216.223.40])
+	by smtp.gmail.com with ESMTPSA id
+	2adb3069b0e04-53a223efad4sm249040e87.67.2024.10.20.08.28.35
+	(version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+	Sun, 20 Oct 2024 08:28:36 -0700 (PDT)
+From: Mikhail Rudenko <mike.rudenko@gmail.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Kieran Bingham <kieran.bingham@ideasonboard.com>,
+	Mikhail Rudenko <mike.rudenko@gmail.com>
+Subject: [PATCH v2 1/4] ipa: rkisp1: agc: Use better defaults for analogue
+	gain and exposure
+Date: Sun, 20 Oct 2024 18:28:18 +0300
+Message-ID: <20241020152821.240726-2-mike.rudenko@gmail.com>
+X-Mailer: git-send-email 2.46.0
+In-Reply-To: <20241020152821.240726-1-mike.rudenko@gmail.com>
+References: <20241020152821.240726-1-mike.rudenko@gmail.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+At present, analogue gain in IPA context is initialized to the minimum
+sensor gain in configure(). Many sensors report minimum analogue gain
+of 0, which is by no means a sane default. Use a reasonable default of
+1.0 instead. Also, set default exposure to maximum. In the common case
+when no gain stages are configured and no gain/exposure constraints
+are set, these defaults result in having right gain or exposure from
+the start, since AGC either sets 1.0 gain and steers exposure (lighter
+scenes), or sets max exposure and steers gain (darker scenes).
+
+Signed-off-by: Mikhail Rudenko <mike.rudenko@gmail.com>
+---
+ src/ipa/rkisp1/algorithms/agc.cpp | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/ipa/rkisp1/algorithms/agc.cpp b/src/ipa/rkisp1/algorithms/agc.cpp
+index 17d074d9..2b36d7aa 100644
+--- a/src/ipa/rkisp1/algorithms/agc.cpp
++++ b/src/ipa/rkisp1/algorithms/agc.cpp
+@@ -30,9 +30,12 @@
+ namespace libcamera {
+ 
+ using namespace std::literals::chrono_literals;
++using utils::Duration;
+ 
+ namespace ipa::rkisp1::algorithms {
+ 
++constexpr double defaultAnalogueGain = 1.0;
++
+ /**
+  * \class Agc
+  * \brief A mean-based auto-exposure algorithm
+@@ -164,9 +167,9 @@ int Agc::init(IPAContext &context, const YamlObject &tuningData)
+ int Agc::configure(IPAContext &context, const IPACameraSensorInfo &configInfo)
+ {
+ 	/* Configure the default exposure and gain. */
+-	context.activeState.agc.automatic.gain = context.configuration.sensor.minAnalogueGain;
++	context.activeState.agc.automatic.gain = defaultAnalogueGain;
+ 	context.activeState.agc.automatic.exposure =
+-		10ms / context.configuration.sensor.lineDuration;
++		context.configuration.sensor.maxShutterSpeed / context.configuration.sensor.lineDuration;
+ 	context.activeState.agc.manual.gain = context.activeState.agc.automatic.gain;
+ 	context.activeState.agc.manual.exposure = context.activeState.agc.automatic.exposure;
+ 	context.activeState.agc.autoEnabled = !context.configuration.raw;
+
+From patchwork Sun Oct 20 15:28:19 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Mikhail Rudenko <mike.rudenko@gmail.com>
+X-Patchwork-Id: 21709
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 93C4DC3307
+	for <parsemail@patchwork.libcamera.org>;
+	Sun, 20 Oct 2024 15:28:52 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id BE55A65393;
+	Sun, 20 Oct 2024 17:28:51 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (2048-bit key;
+	unprotected) header.d=gmail.com header.i=@gmail.com
+	header.b="O1IfeYQb"; dkim-atps=neutral
+Received: from mail-lf1-x133.google.com (mail-lf1-x133.google.com
+	[IPv6:2a00:1450:4864:20::133])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 75FCD65392
+	for <libcamera-devel@lists.libcamera.org>;
+	Sun, 20 Oct 2024 17:28:40 +0200 (CEST)
+Received: by mail-lf1-x133.google.com with SMTP id
+	2adb3069b0e04-5366fd6fdf1so5244471e87.0
+	for <libcamera-devel@lists.libcamera.org>;
+	Sun, 20 Oct 2024 08:28:40 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=gmail.com; s=20230601; t=1729438118; x=1730042918;
+	darn=lists.libcamera.org;
+	h=content-transfer-encoding:mime-version:references:in-reply-to
+	:message-id:date:subject:cc:to:from:from:to:cc:subject:date
+	:message-id:reply-to;
+	bh=mBo7mhFEAoREmEgOkqNk+zC0d3g9ZeqMWWN8cDklThM=;
+	b=O1IfeYQbxirvFWzRGzwfFazx04Oes495TDCr7yKP0UTo3WxZedk+ArDafLwEJVrHIr
+	P4Rgnmj+ann4ft5+JgSl3WWaCOVl5w4SX0rDiTINmb6Stio3SW6DSvle+jhCJrOaZ/j+
+	mX7sED0gDKPltIZrFwFCB30BfjVFHSJe/V0EJkIW6e1JtQ+HeVU0svi5Rksm9XMcjMu3
+	RkU3Lge42tPnjkpJsTwO1QU/uCqoUj7G8D8o7Y2JBuAcjCEWzzMV4jBv8znA8qwyu4Q1
+	MzeMbF/LzJvu8XraZf0Aa4hZESzYB6IhvwLPXnNZ1LIbD7DUvC36067f3mJA+fWHFJrI
+	uGJQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=1e100.net; s=20230601; t=1729438118; x=1730042918;
+	h=content-transfer-encoding:mime-version:references:in-reply-to
+	:message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
+	:subject:date:message-id:reply-to;
+	bh=mBo7mhFEAoREmEgOkqNk+zC0d3g9ZeqMWWN8cDklThM=;
+	b=spy0fL0wxXEFi8MMaeBSrjl9U8jsp1heDJT499eo5aebNiQQaO4UgrpCY45ptUJvAO
+	/ZW/DX64NT2ZCeq0uuZhkyRWDP7oGlgZ2FT0gOXwuMbK3F2Nu2SbtoMMzwIr5M9QFBAQ
+	4aal/H2VBWrYiCCIBjwPmMw/OFtEp13pVrYXiBHphrsmnd2847oKDnXi/ZIxkygLfoIt
+	MJ0SznQeXghI/cW91M2sm0U6H9RTIiAaS/giY3eyMIXSqc52TsTslhTbSjiuRxi0aFs7
+	QGsS8U7S9f9pBUHQtrUcVCPxFLQAsbdBeJ03H3S+TqvXzGjG6C2fJ4UuisJiaJEmi0mo
+	wkOA==
+X-Gm-Message-State: AOJu0Yz9DDRU1BlY9CYyWRs7YizHKu2BzDmLvKNkpVIeGR4Jd8ALqXf+
+	Z4SERrh9WbL2GtMyhhep9YpQcSMl8D15FH2hncWMHG1s14gYt8VajEiFxA==
+X-Google-Smtp-Source: 
+ AGHT+IERa9kp8yzjbLKUZPyShQEkLxHmz0W9NvNrc89+lRVFGOtJltz/v9ujHAApeEG2s2LV30wZPw==
+X-Received: by 2002:a05:6512:3092:b0:539:e80c:23f with SMTP id
+	2adb3069b0e04-53a15444867mr4136473e87.14.1729438117879;
+	Sun, 20 Oct 2024 08:28:37 -0700 (PDT)
+Received: from localhost.localdomain
+	(static.40.223.216.95.clients.your-server.de. [95.216.223.40])
+	by smtp.gmail.com with ESMTPSA id
+	2adb3069b0e04-53a223efad4sm249040e87.67.2024.10.20.08.28.36
+	(version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+	Sun, 20 Oct 2024 08:28:37 -0700 (PDT)
+From: Mikhail Rudenko <mike.rudenko@gmail.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Kieran Bingham <kieran.bingham@ideasonboard.com>,
+	Mikhail Rudenko <mike.rudenko@gmail.com>
+Subject: [PATCH v2 2/4] utils: ipc: Allow start method with output parameters
+	in IPA proxies
+Date: Sun, 20 Oct 2024 18:28:19 +0300
+Message-ID: <20241020152821.240726-3-mike.rudenko@gmail.com>
+X-Mailer: git-send-email 2.46.0
+In-Reply-To: <20241020152821.240726-1-mike.rudenko@gmail.com>
+References: <20241020152821.240726-1-mike.rudenko@gmail.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+At present IPA proxy and IPA proxy worker templates generate incorrect
+code when IPA start method has multiple output parameters and no input
+parameters. Fix that. Also merge repetitive cases of start function
+returning void/non-void in IPA proxy template.
+
+Signed-off-by: Mikhail Rudenko <mike.rudenko@gmail.com>
+---
+ .../libcamera_templates/module_ipa_proxy.h.tmpl       | 11 ++++-------
+ .../module_ipa_proxy_worker.cpp.tmpl                  |  2 +-
+ 2 files changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/utils/codegen/ipc/generators/libcamera_templates/module_ipa_proxy.h.tmpl b/utils/codegen/ipc/generators/libcamera_templates/module_ipa_proxy.h.tmpl
+index e213b18a..138832b5 100644
+--- a/utils/codegen/ipc/generators/libcamera_templates/module_ipa_proxy.h.tmpl
++++ b/utils/codegen/ipc/generators/libcamera_templates/module_ipa_proxy.h.tmpl
+@@ -95,13 +95,10 @@ private:
+ {%- elif method.mojom_name == "start" %}
+ 		{{proxy_funcs.func_sig(proxy_name, method, "", false)|indent(16)}}
+ 		{
+-{%- if method|method_return_value != "void" %}
+-			return ipa_->{{method.mojom_name}}({{method.parameters|params_comma_sep}});
+-{%- else %}
+-			ipa_->{{method.mojom_name}}({{method.parameters|params_comma_sep}}
+-	{{- ", " if method|method_param_outputs|params_comma_sep -}}
+-	{{- method|method_param_outputs|params_comma_sep}});
+-{%- endif %}
++			{{ "return" if method|method_return_value != "void" }} ipa_->
++			{{- method.mojom_name}}({{method.parameters|params_comma_sep}}
++				{{- ", " if method|method_param_outputs|params_comma_sep and method.parameters|params_comma_sep -}}
++				{{- method|method_param_outputs|params_comma_sep}});
+ 		}
+ {%- endif %}
+ {%- endfor %}
+diff --git a/utils/codegen/ipc/generators/libcamera_templates/module_ipa_proxy_worker.cpp.tmpl b/utils/codegen/ipc/generators/libcamera_templates/module_ipa_proxy_worker.cpp.tmpl
+index 1f990d3f..6bc11a09 100644
+--- a/utils/codegen/ipc/generators/libcamera_templates/module_ipa_proxy_worker.cpp.tmpl
++++ b/utils/codegen/ipc/generators/libcamera_templates/module_ipa_proxy_worker.cpp.tmpl
+@@ -93,7 +93,7 @@ public:
+ 			{{method|method_return_value}} _callRet =
+ {%- endif -%}
+ 			ipa_->{{method.mojom_name}}({{method.parameters|params_comma_sep}}
+-{{- ", " if method|method_param_outputs|params_comma_sep -}}
++{{- ", " if method|method_param_outputs|params_comma_sep and method.parameters|params_comma_sep -}}
+ {%- for param in method|method_param_outputs -%}
+ &{{param.mojom_name}}{{", " if not loop.last}}
+ {%- endfor -%}
+
+From patchwork Sun Oct 20 15:28:20 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Mikhail Rudenko <mike.rudenko@gmail.com>
+X-Patchwork-Id: 21708
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 259DCC3304
+	for <parsemail@patchwork.libcamera.org>;
+	Sun, 20 Oct 2024 15:28:50 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id AEC8A65391;
+	Sun, 20 Oct 2024 17:28:49 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (2048-bit key;
+	unprotected) header.d=gmail.com header.i=@gmail.com
+	header.b="Q71tmijn"; dkim-atps=neutral
+Received: from mail-lf1-x12e.google.com (mail-lf1-x12e.google.com
+	[IPv6:2a00:1450:4864:20::12e])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id CAD856538D
+	for <libcamera-devel@lists.libcamera.org>;
+	Sun, 20 Oct 2024 17:28:40 +0200 (CEST)
+Received: by mail-lf1-x12e.google.com with SMTP id
+	2adb3069b0e04-53a0c160b94so1523389e87.2
+	for <libcamera-devel@lists.libcamera.org>;
+	Sun, 20 Oct 2024 08:28:40 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=gmail.com; s=20230601; t=1729438119; x=1730042919;
+	darn=lists.libcamera.org;
+	h=content-transfer-encoding:mime-version:references:in-reply-to
+	:message-id:date:subject:cc:to:from:from:to:cc:subject:date
+	:message-id:reply-to;
+	bh=RZA4Fbi06ANAkJZDjKo3YmQxc3CPBlt20nPCs8P4ek8=;
+	b=Q71tmijnrj+BNqzH4llfeK46Q9vjNzETTJ5n2GTZOudcG/8X6rpafvu0/iABVsG5zV
+	kN23LgRGO3kK2xZ/yK+lQ1Ht5mYBD4gMDB/NuzktAO1yQcjrVRzK9kOzT7ZZJCeaIKq0
+	oLmFAGgZHw2GivIMeSIz0IPfUPpvtr4Zgam2XE0u2ZAyCDRqbxdVndl4z0hFHI3AsKKb
+	jtqsAd+ITWc3H+uSo1Jqayd7C8Mnr4JEQqGhKdQocm9cZhz0SecWhaWbdIcmDvMgJdN8
+	QBoeLameOIsbDQI/gKLm24nYjxGWvkRArMKCsG42M5v2+HvEu05GZlaoVh+6Ir4VMU9P
+	/Cmg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=1e100.net; s=20230601; t=1729438119; x=1730042919;
+	h=content-transfer-encoding:mime-version:references:in-reply-to
+	:message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
+	:subject:date:message-id:reply-to;
+	bh=RZA4Fbi06ANAkJZDjKo3YmQxc3CPBlt20nPCs8P4ek8=;
+	b=k2fccAxVNgdrV+K8sXqxl5+q02sQO3IJfADh4uFV+2HrbbFRBg0O5QuOAJABdX0q88
+	Un0uQsTdbtdpJQbOvofWv4eCafVUA4y+PrGOf+lx10FwqIPjoKZkGJUaidwsgm1FvuSC
+	dQg+uHy2Em7aCF3CIH5XIqvszj4bZuFY3Vwz2dJnpgZWFVJiao0eoQaNskvpapyeeUwA
+	yFlNpixBQ2wDEA57NN327s96oeCjQsN3gDG3br0kT0L4Cr1qVVBtPZijtyzKElBl+pvA
+	GcmcxryIyYTANBagHPIsG4kvRVW8HLauixmMXKxbMF0WY5f31DfS7XrlwomKvXkRMIn2
+	M5hg==
+X-Gm-Message-State: AOJu0YzW/CNgMd7Sj2yFKcnXWJD4YDb9S8LFCQAzhez1OvbA41jIvRxH
+	F5eZoEbFGLQFmuDl8sME7IHrro1Bs2OkAGv6qqdzN+lcGHvy+Thg2Xu1sQ==
+X-Google-Smtp-Source: 
+ AGHT+IGKQ6bO1b06MR/GAadxCz0WBSNE02p8qQwapqRscOpQKcqikdpN0SrwnLDCaHGqMGWbHFDlOA==
+X-Received: by 2002:a05:6512:1582:b0:539:9f3c:3bfd with SMTP id
+	2adb3069b0e04-53a154ab92amr4950134e87.58.1729438118613;
+	Sun, 20 Oct 2024 08:28:38 -0700 (PDT)
+Received: from localhost.localdomain
+	(static.40.223.216.95.clients.your-server.de. [95.216.223.40])
+	by smtp.gmail.com with ESMTPSA id
+	2adb3069b0e04-53a223efad4sm249040e87.67.2024.10.20.08.28.38
+	(version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+	Sun, 20 Oct 2024 08:28:38 -0700 (PDT)
+From: Mikhail Rudenko <mike.rudenko@gmail.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Kieran Bingham <kieran.bingham@ideasonboard.com>,
+	Mikhail Rudenko <mike.rudenko@gmail.com>
+Subject: [PATCH v2 3/4] rkisp1: synchronize sensor controls with IPA
+Date: Sun, 20 Oct 2024 18:28:20 +0300
+Message-ID: <20241020152821.240726-4-mike.rudenko@gmail.com>
+X-Mailer: git-send-email 2.46.0
+In-Reply-To: <20241020152821.240726-1-mike.rudenko@gmail.com>
+References: <20241020152821.240726-1-mike.rudenko@gmail.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+When IPA AGC active state is initialized in configure() method, it may
+fall out of sync with actual sensor controls and initial values in the
+delayed controls. Fix this by sending updated controls to the pipeline
+handler on first start() after configure(). Also reset delayedCtrls_
+on start to make it capture the updated control values.
+
+Signed-off-by: Mikhail Rudenko <mike.rudenko@gmail.com>
+---
+ include/libcamera/ipa/rkisp1.mojom       |  2 +-
+ src/ipa/rkisp1/ipa_context.h             |  2 ++
+ src/ipa/rkisp1/rkisp1.cpp                | 19 +++++++++++++++----
+ src/libcamera/pipeline/rkisp1/rkisp1.cpp |  6 +++++-
+ 4 files changed, 23 insertions(+), 6 deletions(-)
+
+diff --git a/include/libcamera/ipa/rkisp1.mojom b/include/libcamera/ipa/rkisp1.mojom
+index 80d54a03..09900742 100644
+--- a/include/libcamera/ipa/rkisp1.mojom
++++ b/include/libcamera/ipa/rkisp1.mojom
+@@ -20,7 +20,7 @@ interface IPARkISP1Interface {
+ 	     libcamera.IPACameraSensorInfo sensorInfo,
+ 	     libcamera.ControlInfoMap sensorControls)
+ 		=> (int32 ret, libcamera.ControlInfoMap ipaControls);
+-	start() => (int32 ret);
++	start() => (int32 ret, libcamera.ControlList sensorControls);
+ 	stop();
+ 
+ 	configure(IPAConfigInfo configInfo,
+diff --git a/src/ipa/rkisp1/ipa_context.h b/src/ipa/rkisp1/ipa_context.h
+index e274d9b0..e07a5cdb 100644
+--- a/src/ipa/rkisp1/ipa_context.h
++++ b/src/ipa/rkisp1/ipa_context.h
+@@ -191,6 +191,8 @@ struct IPAContext {
+ 
+ 	/* Interface to the Camera Helper */
+ 	std::unique_ptr<CameraSensorHelper> camHelper;
++
++	bool sensorControlsNeedSync;
+ };
+ 
+ } /* namespace ipa::rkisp1 */
+diff --git a/src/ipa/rkisp1/rkisp1.cpp b/src/ipa/rkisp1/rkisp1.cpp
+index 9e161cab..680a7eee 100644
+--- a/src/ipa/rkisp1/rkisp1.cpp
++++ b/src/ipa/rkisp1/rkisp1.cpp
+@@ -55,7 +55,7 @@ public:
+ 		 const IPACameraSensorInfo &sensorInfo,
+ 		 const ControlInfoMap &sensorControls,
+ 		 ControlInfoMap *ipaControls) override;
+-	int start() override;
++	int start(ControlList *sensorControls) override;
+ 	void stop() override;
+ 
+ 	int configure(const IPAConfigInfo &ipaConfig,
+@@ -124,7 +124,7 @@ const ControlInfoMap::Map rkisp1Controls{
+ } /* namespace */
+ 
+ IPARkISP1::IPARkISP1()
+-	: context_({ {}, {}, {}, {}, { kMaxFrameContexts }, {}, {} })
++	: context_({ {}, {}, {}, {}, { kMaxFrameContexts }, {}, {}, false })
+ {
+ }
+ 
+@@ -208,10 +208,19 @@ int IPARkISP1::init(const IPASettings &settings, unsigned int hwRevision,
+ 	return 0;
+ }
+ 
+-int IPARkISP1::start()
++int IPARkISP1::start(ControlList *sensorControls)
+ {
+-	setControls(0);
++	if (context_.sensorControlsNeedSync) {
++		const auto &agc = context_.activeState.agc;
++		uint32_t exposure = agc.automatic.exposure;
++		uint32_t gain = context_.camHelper->gainCode(agc.automatic.gain);
+ 
++		*sensorControls = ControlList{ sensorControls_ };
++		sensorControls->set(V4L2_CID_EXPOSURE, static_cast<int32_t>(exposure));
++		sensorControls->set(V4L2_CID_ANALOGUE_GAIN, static_cast<int32_t>(gain));
++
++		context_.sensorControlsNeedSync = false;
++	}
+ 	return 0;
+ }
+ 
+@@ -290,6 +299,8 @@ int IPARkISP1::configure(const IPAConfigInfo &ipaConfig,
+ 			return ret;
+ 	}
+ 
++	context_.sensorControlsNeedSync = true;
++
+ 	return 0;
+ }
+ 
+diff --git a/src/libcamera/pipeline/rkisp1/rkisp1.cpp b/src/libcamera/pipeline/rkisp1/rkisp1.cpp
+index 42961c12..18d98547 100644
+--- a/src/libcamera/pipeline/rkisp1/rkisp1.cpp
++++ b/src/libcamera/pipeline/rkisp1/rkisp1.cpp
+@@ -943,6 +943,7 @@ int PipelineHandlerRkISP1::start(Camera *camera, [[maybe_unused]] const ControlL
+ {
+ 	RkISP1CameraData *data = cameraData(camera);
+ 	utils::ScopeExitActions actions;
++	ControlList sensorControls;
+ 	int ret;
+ 
+ 	/* Allocate buffers for internal pipeline usage. */
+@@ -951,7 +952,7 @@ int PipelineHandlerRkISP1::start(Camera *camera, [[maybe_unused]] const ControlL
+ 		return ret;
+ 	actions += [&]() { freeBuffers(camera); };
+ 
+-	ret = data->ipa_->start();
++	ret = data->ipa_->start(&sensorControls);
+ 	if (ret) {
+ 		LOG(RkISP1, Error)
+ 			<< "Failed to start IPA " << camera->id();
+@@ -961,6 +962,9 @@ int PipelineHandlerRkISP1::start(Camera *camera, [[maybe_unused]] const ControlL
+ 
+ 	data->frame_ = 0;
+ 
++	data->sensor_->setControls(&sensorControls);
++	data->delayedCtrls_->reset();
++
+ 	if (!isRaw_) {
+ 		ret = param_->streamOn();
+ 		if (ret) {
+
+From patchwork Sun Oct 20 15:28:21 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Mikhail Rudenko <mike.rudenko@gmail.com>
+X-Patchwork-Id: 21710
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 97E4FC3304
+	for <parsemail@patchwork.libcamera.org>;
+	Sun, 20 Oct 2024 15:28:54 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id B23DF65396;
+	Sun, 20 Oct 2024 17:28:53 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (2048-bit key;
+	unprotected) header.d=gmail.com header.i=@gmail.com
+	header.b="Qfwk73r8"; dkim-atps=neutral
+Received: from mail-lf1-x129.google.com (mail-lf1-x129.google.com
+	[IPv6:2a00:1450:4864:20::129])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 126DA6538F
+	for <libcamera-devel@lists.libcamera.org>;
+	Sun, 20 Oct 2024 17:28:41 +0200 (CEST)
+Received: by mail-lf1-x129.google.com with SMTP id
+	2adb3069b0e04-53a007743e7so4302947e87.1
+	for <libcamera-devel@lists.libcamera.org>;
+	Sun, 20 Oct 2024 08:28:41 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=gmail.com; s=20230601; t=1729438120; x=1730042920;
+	darn=lists.libcamera.org;
+	h=content-transfer-encoding:mime-version:references:in-reply-to
+	:message-id:date:subject:cc:to:from:from:to:cc:subject:date
+	:message-id:reply-to;
+	bh=4bm5r3CB3RWzDN5kuKb8SsqCek9pBMr5+Wpi3nt0Qxo=;
+	b=Qfwk73r84L5sZL76nTUCHZVJhclVPjOMbBP9uUoKMDU6nVJYr5i9o6rVose7ZShAot
+	nevVPZ/o87UFnR6ENlC81zk0btO6YGwWaKhO1IunB4WqQnvpXX/3giWPycw3zSwRT9MJ
+	/IUPHotAeWQopRwEuk5qymICZ2FfWIAxYkufN6AgbGQ/Kq3B52e/8Op530cuFU93I+RV
+	fgKwldbpoHYXf+2IeAVhCaLrbYnV42zazRqlZoE1m0LHs3um9l3IkKlBRgwpWb9pB0Ll
+	+GKfLFDkVwP5Qm540nbtwvaDpLBla5Qp8O8gqOp1F+CxrX2Hp5QqUGraCB/apMBaer1a
+	zGLA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=1e100.net; s=20230601; t=1729438120; x=1730042920;
+	h=content-transfer-encoding:mime-version:references:in-reply-to
+	:message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
+	:subject:date:message-id:reply-to;
+	bh=4bm5r3CB3RWzDN5kuKb8SsqCek9pBMr5+Wpi3nt0Qxo=;
+	b=BsuLU41eBDKXscaaCutJPWl7b9ctSKao+LE9Dab3Izz1yoxEjYuNrNDnG3lZqP5pHb
+	Ydmrm/sUPDXcS8LGjotiS5m1kR31o3eaLouC/+I5JY68y1Rgyf+nE7j99To8KZyxdnxZ
+	HZ3xI6xqFT3waen/dxIzvX+Osglgje52vWe8BUbE3BH0v/pVnYFc7MxFTxFveJPWbn1r
+	Zqyw6roMfdLf4jZxQSks3R0MhsWF2TGROvxAqh4xprlUev7FjMuyaDM+/AlW6PPM3bhE
+	xfYNNCwTTMFIMR/oM/F35y7shkXTPDH7wNsQ6Aowdzce4v+euFY5f0A6egeWMjmYKzXc
+	Fz2Q==
+X-Gm-Message-State: AOJu0YwF1Dq/t910ZvofV84GAVTmwPihksqkfFfOxf3w04iiAG3unT5F
+	zHJGsGotXTUM55Dtdl8uf+yOmC4BNIR3kxdIacfRIAxgpOW4Qvcp19ph4A==
+X-Google-Smtp-Source: 
+ AGHT+IEPzDLJMBOGzCG9Gh1E7eTFZPF1IHuHkMRl0nizwqSjznyvj4d0Mq24potc+G55Vtw5DxOokQ==
+X-Received: by 2002:a05:6512:124c:b0:539:e873:6d7 with SMTP id
+	2adb3069b0e04-53a154410e0mr4051767e87.1.1729438119775;
+	Sun, 20 Oct 2024 08:28:39 -0700 (PDT)
+Received: from localhost.localdomain
+	(static.40.223.216.95.clients.your-server.de. [95.216.223.40])
+	by smtp.gmail.com with ESMTPSA id
+	2adb3069b0e04-53a223efad4sm249040e87.67.2024.10.20.08.28.38
+	(version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+	Sun, 20 Oct 2024 08:28:39 -0700 (PDT)
+From: Mikhail Rudenko <mike.rudenko@gmail.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Kieran Bingham <kieran.bingham@ideasonboard.com>,
+	Mikhail Rudenko <mike.rudenko@gmail.com>
+Subject: [PATCH v2 4/4] ipa: rkisp1: use active state in setControls
+Date: Sun, 20 Oct 2024 18:28:21 +0300
+Message-ID: <20241020152821.240726-5-mike.rudenko@gmail.com>
+X-Mailer: git-send-email 2.46.0
+In-Reply-To: <20241020152821.240726-1-mike.rudenko@gmail.com>
+References: <20241020152821.240726-1-mike.rudenko@gmail.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+The results of AGC algorithm currently travel a long way before being
+actually applied. Let's consider the common case when 4 requests are
+used and frames 0-3 are queued before start(). AGC is first run when
+frame 0 stats are ready, and exposure/gain are saved in
+activeState. Then, when frame 4 is queued, they are stored in
+corresponding frameContext. Four frames later, frame 4 is captured,
+and after processing the stats buffer, exposure/gain are extracted
+from frameContext and queued to delayedControls in setControls(). On
+frame 5, delayedControls apply them. Assuming a control delay of 2, the
+settings will become effective for frame 7. So, it takes 7 frames for
+the AGC algorithm to get feedback. This results in suboptimal
+convergence rate.
+
+If we instead use just computed exposure/gain from the activeState in
+setControls, the delay is reduced from 7 frames to 3 frames. Tests
+on OV4689 sensor show faster convergence and no unwanted side effects.
+Signed-off-by: Mikhail Rudenko <mike.rudenko@gmail.com>
+---
+ src/ipa/rkisp1/rkisp1.cpp | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+--
+2.46.0
+
+diff --git a/src/ipa/rkisp1/rkisp1.cpp b/src/ipa/rkisp1/rkisp1.cpp
+index 680a7eee..8793d59f 100644
+--- a/src/ipa/rkisp1/rkisp1.cpp
++++ b/src/ipa/rkisp1/rkisp1.cpp
+@@ -458,9 +458,11 @@ void IPARkISP1::setControls(unsigned int frame)
+ 	 * internal sensor delays and other timing parameters into account.
+ 	 */
+
+-	IPAFrameContext &frameContext = context_.frameContexts.get(frame);
+-	uint32_t exposure = frameContext.agc.exposure;
+-	uint32_t gain = context_.camHelper->gainCode(frameContext.agc.gain);
++	const auto &agc = context_.activeState.agc;
++	uint32_t exposure = agc.autoEnabled ?
++			    agc.automatic.exposure : agc.manual.exposure;
++	uint32_t gain = context_.camHelper->gainCode(agc.autoEnabled ?
++						     agc.automatic.gain : agc.manual.gain);
+
+ 	ControlList ctrls(sensorControls_);
+ 	ctrls.set(V4L2_CID_EXPOSURE, static_cast<int32_t>(exposure));

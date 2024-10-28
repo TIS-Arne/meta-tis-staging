@@ -1,0 +1,796 @@
+From patchwork Wed Oct 16 17:03:42 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+X-Patchwork-Id: 21645
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 1D03DC32FA
+	for <parsemail@patchwork.libcamera.org>;
+	Wed, 16 Oct 2024 17:04:08 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 7317365389;
+	Wed, 16 Oct 2024 19:04:03 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="hYKYK936"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[IPv6:2001:4b98:dc2:55:216:3eff:fef7:d647])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 132506537F
+	for <libcamera-devel@lists.libcamera.org>;
+	Wed, 16 Oct 2024 19:03:59 +0200 (CEST)
+Received: from ideasonboard.com (unknown [5.179.178.254])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id 13727E0D;
+	Wed, 16 Oct 2024 19:02:15 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1729098136;
+	bh=nvoR9zgb+OWw1hBzlRG1xkn55L/XGOsohzyykG+tyXo=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=hYKYK936PAGmJu8SgTwqRSj6XFZjxpHHDDjMhQyJNcz41BrXE+fMqP+/DfmM6kANQ
+	SSWCGz6k5kOrRfNrZ2cNrMMOl2sph0wYD/Oj7gbNS8f2sCcWP/rBxGhT6aqPAxV+31
+	q5noeldeXvqn+x1JQYHGjxGpbwbFY4upw7yMnpoQ=
+From: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Jacopo Mondi <jacopo.mondi@ideasonboard.com>,
+	Paul Elder <paul.elder@ideasonboard.com>
+Subject: [PATCH 1/4] libipa: FrameContext: Move init() to FrameContext
+Date: Wed, 16 Oct 2024 19:03:42 +0200
+Message-ID: <20241016170348.715993-2-jacopo.mondi@ideasonboard.com>
+X-Mailer: git-send-email 2.47.0
+In-Reply-To: <20241016170348.715993-1-jacopo.mondi@ideasonboard.com>
+References: <20241016170348.715993-1-jacopo.mondi@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+The FCtQueue structure initializes a new FrameContext using its init()
+function. In case of request underrun, where a FrameContext is
+initialized without application's controls being supplied, the
+FrameContext needs to be initialized to default values.
+
+In order to allow the single IPAs to initialize a FrameContext to
+the desired default values, move the init() function to the FrameContext
+structure, which each IPA derives to a per-IPA type.
+
+In this way each IPA can override the FrameContext::init() function
+and initialize the FrameContext to the desired default values.
+
+Signed-off-by: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+---
+ src/ipa/libipa/fc_queue.cpp    | 10 ++++++++++
+ src/ipa/libipa/fc_queue.h      | 16 ++++++++--------
+ src/ipa/rkisp1/ipa_context.cpp |  5 +++++
+ src/ipa/rkisp1/ipa_context.h   |  2 ++
+ 4 files changed, 25 insertions(+), 8 deletions(-)
+
+diff --git a/src/ipa/libipa/fc_queue.cpp b/src/ipa/libipa/fc_queue.cpp
+index 0365e9197748..fa2454fd5706 100644
+--- a/src/ipa/libipa/fc_queue.cpp
++++ b/src/ipa/libipa/fc_queue.cpp
+@@ -38,6 +38,16 @@ namespace ipa {
+  * \brief The frame number
+  */
+ 
++/**
++ * \fn FrameContext::init()
++ * \brief Initialize a frame context
++ * \param[in] frameNum The frame number to assign to this FrameContext
++ *
++ * This function initializes a frame context by assigning it a frame number.
++ * The single IPA modules are expected to override this function to initialize
++ * their derived FrameContext implementation to their desired default values.
++ */
++
+ /**
+  * \class FCQueue
+  * \brief A support class for managing FrameContext instances in IPA modules
+diff --git a/src/ipa/libipa/fc_queue.h b/src/ipa/libipa/fc_queue.h
+index 24d9e82b727d..b1e8bc1485d4 100644
+--- a/src/ipa/libipa/fc_queue.h
++++ b/src/ipa/libipa/fc_queue.h
+@@ -22,6 +22,12 @@ template<typename FrameContext>
+ class FCQueue;
+ 
+ struct FrameContext {
++protected:
++	virtual void init(const uint32_t frameNum)
++	{
++		frame = frameNum;
++	}
++
+ private:
+ 	template<typename T> friend class FCQueue;
+ 	uint32_t frame;
+@@ -61,7 +67,7 @@ public:
+ 			LOG(FCQueue, Warning)
+ 				<< "Frame " << frame << " already initialised";
+ 		else
+-			init(frameContext, frame);
++			frameContext.init(frame);
+ 
+ 		return frameContext;
+ 	}
+@@ -98,18 +104,12 @@ public:
+ 		LOG(FCQueue, Warning)
+ 			<< "Obtained an uninitialised FrameContext for " << frame;
+ 
+-		init(frameContext, frame);
++		frameContext.init(frame);
+ 
+ 		return frameContext;
+ 	}
+ 
+ private:
+-	void init(FrameContext &frameContext, const uint32_t frame)
+-	{
+-		frameContext = {};
+-		frameContext.frame = frame;
+-	}
+-
+ 	std::vector<FrameContext> contexts_;
+ };
+ 
+diff --git a/src/ipa/rkisp1/ipa_context.cpp b/src/ipa/rkisp1/ipa_context.cpp
+index 14d0c02a2b32..4e4fe5f4ae96 100644
+--- a/src/ipa/rkisp1/ipa_context.cpp
++++ b/src/ipa/rkisp1/ipa_context.cpp
+@@ -417,6 +417,11 @@ namespace libcamera::ipa::rkisp1 {
+  * \brief Analogue gain multiplier
+  */
+ 
++void IPAFrameContext::init(const uint32_t frameNum)
++{
++	FrameContext::init(frameNum);
++}
++
+ /**
+  * \struct IPAContext
+  * \brief Global IPA context data shared between all algorithms
+diff --git a/src/ipa/rkisp1/ipa_context.h b/src/ipa/rkisp1/ipa_context.h
+index e274d9b01e1c..51e04bc30627 100644
+--- a/src/ipa/rkisp1/ipa_context.h
++++ b/src/ipa/rkisp1/ipa_context.h
+@@ -177,6 +177,8 @@ struct IPAFrameContext : public FrameContext {
+ 	struct {
+ 		Matrix<float, 3, 3> ccm;
+ 	} ccm;
++
++	void init(const uint32_t frame) override;
+ };
+ 
+ struct IPAContext {
+
+From patchwork Wed Oct 16 17:03:43 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+X-Patchwork-Id: 21646
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 93CBEC32FA
+	for <parsemail@patchwork.libcamera.org>;
+	Wed, 16 Oct 2024 17:04:10 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 12B1365388;
+	Wed, 16 Oct 2024 19:04:05 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="mpfIL3z/"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[213.167.242.64])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 264C96537F
+	for <libcamera-devel@lists.libcamera.org>;
+	Wed, 16 Oct 2024 19:04:00 +0200 (CEST)
+Received: from ideasonboard.com (unknown [5.179.178.254])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id 65798A57;
+	Wed, 16 Oct 2024 19:02:16 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1729098137;
+	bh=ApN1YnTciaugYHGpzFbsef+SuUqa2tEbXHZztJC5rFo=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=mpfIL3z/fbNf92KTTYy8R0RfuaZe2UgU8bz4p+cGllmo0p9W00TwHp2Q1iC9QFN2z
+	R9UsJuRS+x+KhqspqLNsBysG9K+WaEoN0tEkHp2bt+Mgt/LCOd2cefMX6jtFOyTkjT
+	DUjM77ET0qZBNPo+75EnqdcFXlwsM48xpOxe5I4k=
+From: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Jacopo Mondi <jacopo.mondi@ideasonboard.com>,
+	Paul Elder <paul.elder@ideasonboard.com>
+Subject: [PATCH 2/4] libipa: FCQueue: Make sure FrameContext#0 is initialized
+Date: Wed, 16 Oct 2024 19:03:43 +0200
+Message-ID: <20241016170348.715993-3-jacopo.mondi@ideasonboard.com>
+X-Mailer: git-send-email 2.47.0
+In-Reply-To: <20241016170348.715993-1-jacopo.mondi@ideasonboard.com>
+References: <20241016170348.715993-1-jacopo.mondi@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+Some IPA modules, like the RkISP1 one, call FCQueue::get(0) at
+IPA::start() time, before any frame context has been allocated with
+FCQueue::alloc() called at queueRequest() time.
+
+The FCQueue implementation aims to detect when a FrameContext is get()
+before it is alloc()-ated, Warns about it, and initializes the
+FrameContext before returning it.
+
+In case of frame#0, a get() preceding an alloc() call is not detected
+as the "frame == frameContext.frame" test returns success, as
+FrameContexts are zeroed by default.
+
+As a result, the first returned FrameContext is not initialized.
+
+Explicitly test for frame#0 to make sure the FrameContext is initialized
+if get(0) is called before alloc(0). To avoid re-initializing a frame
+context, in case alloc() has been called correctly before get(),
+introduce an "initialised" state variable that tracks the FrameContext
+initialisation state.
+
+Signed-off-by: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+---
+ src/ipa/libipa/fc_queue.h | 21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/src/ipa/libipa/fc_queue.h b/src/ipa/libipa/fc_queue.h
+index b1e8bc1485d4..bfcce5a81356 100644
+--- a/src/ipa/libipa/fc_queue.h
++++ b/src/ipa/libipa/fc_queue.h
+@@ -26,11 +26,13 @@ protected:
+ 	virtual void init(const uint32_t frameNum)
+ 	{
+ 		frame = frameNum;
++		initialised = true;
+ 	}
+ 
+ private:
+ 	template<typename T> friend class FCQueue;
+ 	uint32_t frame;
++	bool initialised = false;
+ };
+ 
+ template<typename FrameContext>
+@@ -44,8 +46,10 @@ public:
+ 
+ 	void clear()
+ 	{
+-		for (FrameContext &ctx : contexts_)
++		for (FrameContext &ctx : contexts_) {
++			ctx.initialised = false;
+ 			ctx.frame = 0;
++		}
+ 	}
+ 
+ 	FrameContext &alloc(const uint32_t frame)
+@@ -89,6 +93,21 @@ public:
+ 					    << " has been overwritten by "
+ 					    << frameContext.frame;
+ 
++		if (frame == 0 && !frameContext.initialised) {
++			/*
++			 * If the IPA calls get() at start() time it will get an
++			 * un-intialized FrameContext as the below "frame ==
++			 * frameContext.frame" check will return success because
++			 * FrameContexts are zeroed at creation time.
++			 *
++			 * Make sure the FrameContext gets initialised if get()
++			 * is called before alloc() by the IPA for frame#0.
++			 */
++			frameContext.init(frame);
++
++			return frameContext;
++		}
++
+ 		if (frame == frameContext.frame)
+ 			return frameContext;
+ 
+
+From patchwork Wed Oct 16 17:03:44 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+X-Patchwork-Id: 21647
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id E9089C32FA
+	for <parsemail@patchwork.libcamera.org>;
+	Wed, 16 Oct 2024 17:04:12 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 82E0E6538E;
+	Wed, 16 Oct 2024 19:04:11 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="X49egHax"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[IPv6:2001:4b98:dc2:55:216:3eff:fef7:d647])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id A7D7B65384
+	for <libcamera-devel@lists.libcamera.org>;
+	Wed, 16 Oct 2024 19:04:01 +0200 (CEST)
+Received: from ideasonboard.com (unknown [5.179.178.254])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id 401B2E0D;
+	Wed, 16 Oct 2024 19:02:18 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1729098138;
+	bh=mDEtsh1FkUMJdA/LMaAp6tfS67+zizB5fMKAYhiQZ6M=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=X49egHaxzKRuKIRGTRIWf9nnCIgXTyI1c7I1igotiejQKUZF+xtbnJWXkvSOAhIt2
+	TPjoK31/c44u2ne70+WQuudfhoyh6ApaAMcTbpPX0k602wKv0mUueqRwjn7k8Q3gvb
+	Kg10DZ34cd0pKS6b1LWlF8ICibnAKpUB9PSZo7Js=
+From: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Jacopo Mondi <jacopo.mondi@ideasonboard.com>,
+	Paul Elder <paul.elder@ideasonboard.com>
+Subject: [PATCH 3/4] libipa: FCQueue: Initialize FrameContext with
+	activeState
+Date: Wed, 16 Oct 2024 19:03:44 +0200
+Message-ID: <20241016170348.715993-4-jacopo.mondi@ideasonboard.com>
+X-Mailer: git-send-email 2.47.0
+In-Reply-To: <20241016170348.715993-1-jacopo.mondi@ideasonboard.com>
+References: <20241016170348.715993-1-jacopo.mondi@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+Pass to the FCQueue the algorithm's active state to use the most
+recent state of IPA algorithms to initialize a FrameContext.
+
+Modify all IPA modules that use libipa to pass a const ActiveState
+reference to the FCQueue function and make their IPAActiveState
+implementation derive a base ActiveState structure.
+
+Signed-off-by: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+---
+ src/ipa/ipu3/ipa_context.h     |  2 +-
+ src/ipa/ipu3/ipu3.cpp          |  9 ++++++---
+ src/ipa/libipa/fc_queue.cpp    | 10 +++++++---
+ src/ipa/libipa/fc_queue.h      | 19 +++++++++++++------
+ src/ipa/rkisp1/ipa_context.cpp |  5 +++--
+ src/ipa/rkisp1/ipa_context.h   |  5 +++--
+ src/ipa/rkisp1/rkisp1.cpp      | 12 ++++++++----
+ src/ipa/simple/ipa_context.h   |  2 +-
+ src/ipa/simple/soft_simple.cpp |  9 ++++++---
+ 9 files changed, 48 insertions(+), 25 deletions(-)
+
+diff --git a/src/ipa/ipu3/ipa_context.h b/src/ipa/ipu3/ipa_context.h
+index c85d1e34ea85..526af2ac0b06 100644
+--- a/src/ipa/ipu3/ipa_context.h
++++ b/src/ipa/ipu3/ipa_context.h
+@@ -46,7 +46,7 @@ struct IPASessionConfiguration {
+ 	} sensor;
+ };
+ 
+-struct IPAActiveState {
++struct IPAActiveState : public ActiveState {
+ 	struct {
+ 		uint32_t focus;
+ 		double maxVariance;
+diff --git a/src/ipa/ipu3/ipu3.cpp b/src/ipa/ipu3/ipu3.cpp
+index 10a8c86d8e64..84c443a009fd 100644
+--- a/src/ipa/ipu3/ipu3.cpp
++++ b/src/ipa/ipu3/ipu3.cpp
+@@ -561,7 +561,8 @@ void IPAIPU3::fillParamsBuffer(const uint32_t frame, const uint32_t bufferId)
+ 	 */
+ 	params->use = {};
+ 
+-	IPAFrameContext &frameContext = context_.frameContexts.get(frame);
++	IPAFrameContext &frameContext = context_.frameContexts.get(frame,
++								   context_.activeState);
+ 
+ 	for (auto const &algo : algorithms())
+ 		algo->prepare(context_, frame, frameContext, params);
+@@ -594,7 +595,8 @@ void IPAIPU3::processStatsBuffer(const uint32_t frame,
+ 	const ipu3_uapi_stats_3a *stats =
+ 		reinterpret_cast<ipu3_uapi_stats_3a *>(mem.data());
+ 
+-	IPAFrameContext &frameContext = context_.frameContexts.get(frame);
++	IPAFrameContext &frameContext = context_.frameContexts.get(frame,
++								   context_.activeState);
+ 
+ 	frameContext.sensor.exposure = sensorControls.get(V4L2_CID_EXPOSURE).get<int32_t>();
+ 	frameContext.sensor.gain = camHelper_->gain(sensorControls.get(V4L2_CID_ANALOGUE_GAIN).get<int32_t>());
+@@ -627,7 +629,8 @@ void IPAIPU3::processStatsBuffer(const uint32_t frame,
+  */
+ void IPAIPU3::queueRequest(const uint32_t frame, const ControlList &controls)
+ {
+-	IPAFrameContext &frameContext = context_.frameContexts.alloc(frame);
++	IPAFrameContext &frameContext = context_.frameContexts.alloc(frame,
++								     context_.activeState);
+ 
+ 	for (auto const &algo : algorithms())
+ 		algo->queueRequest(context_, frame, frameContext, controls);
+diff --git a/src/ipa/libipa/fc_queue.cpp b/src/ipa/libipa/fc_queue.cpp
+index fa2454fd5706..56c7c75a8f48 100644
+--- a/src/ipa/libipa/fc_queue.cpp
++++ b/src/ipa/libipa/fc_queue.cpp
+@@ -42,6 +42,7 @@ namespace ipa {
+  * \fn FrameContext::init()
+  * \brief Initialize a frame context
+  * \param[in] frameNum The frame number to assign to this FrameContext
++ * \param[in] activeState The IPA current active state
+  *
+  * This function initializes a frame context by assigning it a frame number.
+  * The single IPA modules are expected to override this function to initialize
+@@ -117,9 +118,10 @@ namespace ipa {
+  */
+ 
+ /**
+- * \fn FCQueue::alloc(uint32_t frame)
++ * \fn FCQueue::alloc(uint32_t frame, const ActiveState &activeState)
+  * \brief Allocate and return a FrameContext for the \a frame
+  * \param[in] frame The frame context sequence number
++ * \param[in] activeState The IPA current active state
+  *
+  * The first call to obtain a FrameContext from the FCQueue should be handled
+  * through this function. The FrameContext will be initialised, if not
+@@ -135,12 +137,14 @@ namespace ipa {
+  */
+ 
+ /**
+- * \fn FCQueue::get(uint32_t frame)
++ * \fn FCQueue::get(uint32_t frame, const ActiveState &activeState)
+  * \brief Obtain the FrameContext for the \a frame
+  * \param[in] frame The frame context sequence number
++ * \param[in] activeState The IPA current active state
+  *
+  * If the FrameContext is not correctly initialised for the \a frame, it will be
+- * initialised.
++ * initialised using the most current state of IPA algorithm contained in
++ * \a activeState.
+  *
+  * \return A reference to the FrameContext for sequence \a frame
+  */
+diff --git a/src/ipa/libipa/fc_queue.h b/src/ipa/libipa/fc_queue.h
+index bfcce5a81356..48842e54cd35 100644
+--- a/src/ipa/libipa/fc_queue.h
++++ b/src/ipa/libipa/fc_queue.h
+@@ -21,9 +21,16 @@ namespace ipa {
+ template<typename FrameContext>
+ class FCQueue;
+ 
++struct ActiveState {
++};
++
+ struct FrameContext {
++public:
++	virtual ~FrameContext() = default;
++
+ protected:
+-	virtual void init(const uint32_t frameNum)
++	virtual void init(const uint32_t frameNum,
++			  [[maybe_unused]] const ActiveState &activeState)
+ 	{
+ 		frame = frameNum;
+ 		initialised = true;
+@@ -52,7 +59,7 @@ public:
+ 		}
+ 	}
+ 
+-	FrameContext &alloc(const uint32_t frame)
++	FrameContext &alloc(const uint32_t frame, const ActiveState &activeState)
+ 	{
+ 		FrameContext &frameContext = contexts_[frame % contexts_.size()];
+ 
+@@ -71,12 +78,12 @@ public:
+ 			LOG(FCQueue, Warning)
+ 				<< "Frame " << frame << " already initialised";
+ 		else
+-			frameContext.init(frame);
++			frameContext.init(frame, activeState);
+ 
+ 		return frameContext;
+ 	}
+ 
+-	FrameContext &get(uint32_t frame)
++	FrameContext &get(uint32_t frame, const ActiveState &activeState)
+ 	{
+ 		FrameContext &frameContext = contexts_[frame % contexts_.size()];
+ 
+@@ -103,7 +110,7 @@ public:
+ 			 * Make sure the FrameContext gets initialised if get()
+ 			 * is called before alloc() by the IPA for frame#0.
+ 			 */
+-			frameContext.init(frame);
++			frameContext.init(frame, activeState);
+ 
+ 			return frameContext;
+ 		}
+@@ -123,7 +130,7 @@ public:
+ 		LOG(FCQueue, Warning)
+ 			<< "Obtained an uninitialised FrameContext for " << frame;
+ 
+-		frameContext.init(frame);
++		frameContext.init(frame, activeState);
+ 
+ 		return frameContext;
+ 	}
+diff --git a/src/ipa/rkisp1/ipa_context.cpp b/src/ipa/rkisp1/ipa_context.cpp
+index 4e4fe5f4ae96..2dad42b3154f 100644
+--- a/src/ipa/rkisp1/ipa_context.cpp
++++ b/src/ipa/rkisp1/ipa_context.cpp
+@@ -417,9 +417,10 @@ namespace libcamera::ipa::rkisp1 {
+  * \brief Analogue gain multiplier
+  */
+ 
+-void IPAFrameContext::init(const uint32_t frameNum)
++void IPAFrameContext::init(const uint32_t frameNum,
++			   const ActiveState &activeState)
+ {
+-	FrameContext::init(frameNum);
++	FrameContext::init(frameNum, activeState);
+ }
+ 
+ /**
+diff --git a/src/ipa/rkisp1/ipa_context.h b/src/ipa/rkisp1/ipa_context.h
+index 51e04bc30627..f708b32111af 100644
+--- a/src/ipa/rkisp1/ipa_context.h
++++ b/src/ipa/rkisp1/ipa_context.h
+@@ -64,7 +64,7 @@ struct IPASessionConfiguration {
+ 	uint32_t paramFormat;
+ };
+ 
+-struct IPAActiveState {
++struct IPAActiveState : public ActiveState {
+ 	struct {
+ 		struct {
+ 			uint32_t exposure;
+@@ -178,7 +178,8 @@ struct IPAFrameContext : public FrameContext {
+ 		Matrix<float, 3, 3> ccm;
+ 	} ccm;
+ 
+-	void init(const uint32_t frame) override;
++	void init(const uint32_t frame,
++		  const ActiveState &activeState) override;
+ };
+ 
+ struct IPAContext {
+diff --git a/src/ipa/rkisp1/rkisp1.cpp b/src/ipa/rkisp1/rkisp1.cpp
+index 9e161cabdea4..7c1cefc1c7fa 100644
+--- a/src/ipa/rkisp1/rkisp1.cpp
++++ b/src/ipa/rkisp1/rkisp1.cpp
+@@ -325,7 +325,8 @@ void IPARkISP1::unmapBuffers(const std::vector<unsigned int> &ids)
+ 
+ void IPARkISP1::queueRequest(const uint32_t frame, const ControlList &controls)
+ {
+-	IPAFrameContext &frameContext = context_.frameContexts.alloc(frame);
++	IPAFrameContext &frameContext = context_.frameContexts.alloc(frame,
++								     context_.activeState);
+ 
+ 	for (auto const &a : algorithms()) {
+ 		Algorithm *algo = static_cast<Algorithm *>(a.get());
+@@ -337,7 +338,8 @@ void IPARkISP1::queueRequest(const uint32_t frame, const ControlList &controls)
+ 
+ void IPARkISP1::fillParamsBuffer(const uint32_t frame, const uint32_t bufferId)
+ {
+-	IPAFrameContext &frameContext = context_.frameContexts.get(frame);
++	IPAFrameContext &frameContext = context_.frameContexts.get(frame,
++								   context_.activeState);
+ 
+ 	RkISP1Params params(context_.configuration.paramFormat,
+ 			    mappedBuffers_.at(bufferId).planes()[0]);
+@@ -351,7 +353,8 @@ void IPARkISP1::fillParamsBuffer(const uint32_t frame, const uint32_t bufferId)
+ void IPARkISP1::processStatsBuffer(const uint32_t frame, const uint32_t bufferId,
+ 				   const ControlList &sensorControls)
+ {
+-	IPAFrameContext &frameContext = context_.frameContexts.get(frame);
++	IPAFrameContext &frameContext = context_.frameContexts.get(frame,
++								   context_.activeState);
+ 
+ 	/*
+ 	 * In raw capture mode, the ISP is bypassed and no statistics buffer is
+@@ -447,7 +450,8 @@ void IPARkISP1::setControls(unsigned int frame)
+ 	 * internal sensor delays and other timing parameters into account.
+ 	 */
+ 
+-	IPAFrameContext &frameContext = context_.frameContexts.get(frame);
++	IPAFrameContext &frameContext = context_.frameContexts.get(frame,
++								   context_.activeState);
+ 	uint32_t exposure = frameContext.agc.exposure;
+ 	uint32_t gain = context_.camHelper->gainCode(frameContext.agc.gain);
+ 
+diff --git a/src/ipa/simple/ipa_context.h b/src/ipa/simple/ipa_context.h
+index 3519f20f6415..956f4fb71abf 100644
+--- a/src/ipa/simple/ipa_context.h
++++ b/src/ipa/simple/ipa_context.h
+@@ -24,7 +24,7 @@ struct IPASessionConfiguration {
+ 	} agc;
+ };
+ 
+-struct IPAActiveState {
++struct IPAActiveState : public ActiveState {
+ 	struct {
+ 		uint8_t level;
+ 	} blc;
+diff --git a/src/ipa/simple/soft_simple.cpp b/src/ipa/simple/soft_simple.cpp
+index b28c7039f7bd..71b31d728117 100644
+--- a/src/ipa/simple/soft_simple.cpp
++++ b/src/ipa/simple/soft_simple.cpp
+@@ -249,7 +249,8 @@ void IPASoftSimple::stop()
+ 
+ void IPASoftSimple::queueRequest(const uint32_t frame, const ControlList &controls)
+ {
+-	IPAFrameContext &frameContext = context_.frameContexts.alloc(frame);
++	IPAFrameContext &frameContext = context_.frameContexts.alloc(frame,
++								     context_.activeState);
+ 
+ 	for (auto const &algo : algorithms())
+ 		algo->queueRequest(context_, frame, frameContext, controls);
+@@ -257,7 +258,8 @@ void IPASoftSimple::queueRequest(const uint32_t frame, const ControlList &contro
+ 
+ void IPASoftSimple::fillParamsBuffer(const uint32_t frame)
+ {
+-	IPAFrameContext &frameContext = context_.frameContexts.get(frame);
++	IPAFrameContext &frameContext = context_.frameContexts.get(frame,
++								   context_.activeState);
+ 	for (auto const &algo : algorithms())
+ 		algo->prepare(context_, frame, frameContext, params_);
+ 	setIspParams.emit();
+@@ -267,7 +269,8 @@ void IPASoftSimple::processStats(const uint32_t frame,
+ 				 [[maybe_unused]] const uint32_t bufferId,
+ 				 const ControlList &sensorControls)
+ {
+-	IPAFrameContext &frameContext = context_.frameContexts.get(frame);
++	IPAFrameContext &frameContext = context_.frameContexts.get(frame,
++								   context_.activeState);
+ 
+ 	frameContext.sensor.exposure =
+ 		sensorControls.get(V4L2_CID_EXPOSURE).get<int32_t>();
+
+From patchwork Wed Oct 16 17:03:45 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+X-Patchwork-Id: 21648
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 298FFC32FA
+	for <parsemail@patchwork.libcamera.org>;
+	Wed, 16 Oct 2024 17:04:15 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 8356265390;
+	Wed, 16 Oct 2024 19:04:14 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="oRGfja8u"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[IPv6:2001:4b98:dc2:55:216:3eff:fef7:d647])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 12D7065387
+	for <libcamera-devel@lists.libcamera.org>;
+	Wed, 16 Oct 2024 19:04:02 +0200 (CEST)
+Received: from ideasonboard.com (unknown [5.179.178.254])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id 146BCA57;
+	Wed, 16 Oct 2024 19:02:18 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1729098139;
+	bh=WdPsga3bUrrKjDFEvYjrkFAbfuqXjMX3ciPAAERo/f4=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=oRGfja8uExYE/NAVb1p5IH5AVgrQRJOsJKy3S892iQrgCD9VhOp7SvM5GeGrsCr17
+	3PQ1zsAfPbi0APqA85xgQiOOamm0pm+0JKAx1RqQj6c//ARRFCGqMZrfUmNEf0nujl
+	7DhUECNlZvy8EpSeOy65FyU9RhgIQE4YqWXh74ns=
+From: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Jacopo Mondi <jacopo.mondi@ideasonboard.com>,
+	Paul Elder <paul.elder@ideasonboard.com>
+Subject: [PATCH 4/4] ipa: rkisp1: Initialize FrameContext.agc.meteringMode
+Date: Wed, 16 Oct 2024 19:03:45 +0200
+Message-ID: <20241016170348.715993-5-jacopo.mondi@ideasonboard.com>
+X-Mailer: git-send-email 2.47.0
+In-Reply-To: <20241016170348.715993-1-jacopo.mondi@ideasonboard.com>
+References: <20241016170348.715993-1-jacopo.mondi@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+The RkISP1 AGC algorithms assumes the metering mode to be
+"MeteringMatrix" and pre-fill an array of weights associated
+with it stored in meteringModes_[MeteringMatrix] when intializing
+the algorithm in parseMeteringModes().
+
+It laters fetches the weights when computing parameters using the
+FrameContext.agc.meteringMode as index of the meteringModes_ array.
+
+When a Request gets queued to the algorithm, the
+FrameContext.agc.meteringMode index is populated from the algorithm's
+active state, and optionally updated if the application has specified
+a different metering mode.
+
+In case of Request underrun however, a non-initialized FrameContext
+gets provided to the algorithm, causing an (unhandled) exception when
+accessing the meteringModes_ array.
+
+Fix this by intializing the AGC metering mode to a supported value
+coming from the ActiveState in IPAFrameContext::init().
+
+Signed-off-by: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+Reviewed-by: Paul Elder <paul.elder@ideasonboard.com>
+---
+ src/ipa/rkisp1/algorithms/agc.cpp | 2 ++
+ src/ipa/rkisp1/ipa_context.cpp    | 5 +++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/src/ipa/rkisp1/algorithms/agc.cpp b/src/ipa/rkisp1/algorithms/agc.cpp
+index 17d074d9c03e..dd7e9468741e 100644
+--- a/src/ipa/rkisp1/algorithms/agc.cpp
++++ b/src/ipa/rkisp1/algorithms/agc.cpp
+@@ -175,6 +175,8 @@ int Agc::configure(IPAContext &context, const IPACameraSensorInfo &configInfo)
+ 		static_cast<controls::AeConstraintModeEnum>(constraintModes().begin()->first);
+ 	context.activeState.agc.exposureMode =
+ 		static_cast<controls::AeExposureModeEnum>(exposureModeHelpers().begin()->first);
++
++	/* Use the metering matrix mode by default. */
+ 	context.activeState.agc.meteringMode =
+ 		static_cast<controls::AeMeteringModeEnum>(meteringModes_.begin()->first);
+ 
+diff --git a/src/ipa/rkisp1/ipa_context.cpp b/src/ipa/rkisp1/ipa_context.cpp
+index 2dad42b3154f..e88609137345 100644
+--- a/src/ipa/rkisp1/ipa_context.cpp
++++ b/src/ipa/rkisp1/ipa_context.cpp
+@@ -421,6 +421,11 @@ void IPAFrameContext::init(const uint32_t frameNum,
+ 			   const ActiveState &activeState)
+ {
+ 	FrameContext::init(frameNum, activeState);
++
++	const IPAActiveState *rkisp1ActiveState =
++		reinterpret_cast<const IPAActiveState *>(&activeState);
++
++	agc.meteringMode = rkisp1ActiveState->agc.meteringMode;
+ }
+ 
+ /**

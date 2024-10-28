@@ -1,0 +1,1267 @@
+From patchwork Tue Oct  8 15:29:39 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Stefan Klug <stefan.klug@ideasonboard.com>
+X-Patchwork-Id: 21539
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id AF32EBE080
+	for <parsemail@patchwork.libcamera.org>;
+	Tue,  8 Oct 2024 15:30:41 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 5ACAF6536A;
+	Tue,  8 Oct 2024 17:30:41 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="UWLfpZik"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[213.167.242.64])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 18B47618C9
+	for <libcamera-devel@lists.libcamera.org>;
+	Tue,  8 Oct 2024 17:30:39 +0200 (CEST)
+Received: from ideasonboard.com (unknown
+	[IPv6:2a00:6020:448c:6c00:d:f30b:aa60:fabf])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id 65AB4DB2;
+	Tue,  8 Oct 2024 17:29:02 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1728401342;
+	bh=N8SXyiRn6oogNlVsQAt3fKdwiGld6ohhqYMzBlH0PgM=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=UWLfpZikZQbYThAgNOW2Lnkv8T+7Xoyi6a7k1WP7XH6JYeSd5KmPuMOgOYiiHitjQ
+	rqaTJB68rMKhAxXIHBIOCz3u2ISP2ykiTWtMSzpyOY+2DviLO58XCAJTG/c4V+KSZD
+	lSdmgz/6QOI58RIuT66lNM/t9hZ+owqctKM94aTE=
+From: Stefan Klug <stefan.klug@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Stefan Klug <stefan.klug@ideasonboard.com>,
+	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: [PATCH v3 1/7] libcamera: Add debug control space
+Date: Tue,  8 Oct 2024 17:29:39 +0200
+Message-ID: <20241008153031.429906-2-stefan.klug@ideasonboard.com>
+X-Mailer: git-send-email 2.43.0
+In-Reply-To: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+References: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+Add a new 'debug' controls namespace for the upcoming implementation of
+debug metadata. While at it, sort the entries alphabetically.
+
+Signed-off-by: Stefan Klug <stefan.klug@ideasonboard.com>
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Reviewed-by: Kieran Bingham <kieran.bingham@ideasonboard.com>
+---
+Changes in v2:
+- Order lists in meson file alphabetically
+- Fix wording in control-ranges
+---
+ include/libcamera/meson.build        | 5 +++--
+ src/libcamera/control_ids_debug.yaml | 6 ++++++
+ src/libcamera/control_ranges.yaml    | 4 +++-
+ 3 files changed, 12 insertions(+), 3 deletions(-)
+ create mode 100644 src/libcamera/control_ids_debug.yaml
+
+diff --git a/include/libcamera/meson.build b/include/libcamera/meson.build
+index a969a95dbf7a..fd69a5172b6a 100644
+--- a/include/libcamera/meson.build
++++ b/include/libcamera/meson.build
+@@ -34,8 +34,9 @@ libcamera_headers_install_dir = get_option('includedir') / libcamera_include_dir
+ 
+ controls_map = {
+     'controls': {
+-        'draft': 'control_ids_draft.yaml',
+         'core': 'control_ids_core.yaml',
++        'debug': 'control_ids_debug.yaml',
++        'draft': 'control_ids_draft.yaml',
+         'rpi/vc4': 'control_ids_rpi.yaml',
+     },
+ 
+@@ -55,7 +56,7 @@ foreach mode, entry : controls_map
+     files_list = []
+     input_files = []
+     foreach vendor, header : entry
+-        if vendor != 'core' and vendor != 'draft'
++        if vendor not in ['core', 'debug', 'draft']
+             if vendor not in pipelines
+                 continue
+             endif
+diff --git a/src/libcamera/control_ids_debug.yaml b/src/libcamera/control_ids_debug.yaml
+new file mode 100644
+index 000000000000..797532712099
+--- /dev/null
++++ b/src/libcamera/control_ids_debug.yaml
+@@ -0,0 +1,6 @@
++# SPDX-License-Identifier: LGPL-2.1-or-later
++#
++%YAML 1.1
++---
++vendor: debug
++controls: []
+diff --git a/src/libcamera/control_ranges.yaml b/src/libcamera/control_ranges.yaml
+index d42447d04647..6752eb986ac6 100644
+--- a/src/libcamera/control_ranges.yaml
++++ b/src/libcamera/control_ranges.yaml
+@@ -13,6 +13,8 @@ ranges:
+   draft: 10000
+   # Raspberry Pi vendor controls
+   rpi: 20000
+-  # Next range starts at 30000
++  # Controls for debug metadata
++  debug: 30000
++  # Next range starts at 40000
+ 
+ ...
+
+From patchwork Tue Oct  8 15:29:40 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Stefan Klug <stefan.klug@ideasonboard.com>
+X-Patchwork-Id: 21540
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 2B07FBE080
+	for <parsemail@patchwork.libcamera.org>;
+	Tue,  8 Oct 2024 15:30:45 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id A27DF6536A;
+	Tue,  8 Oct 2024 17:30:44 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="XB8EdfLj"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[IPv6:2001:4b98:dc2:55:216:3eff:fef7:d647])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 4CDFC6536C
+	for <libcamera-devel@lists.libcamera.org>;
+	Tue,  8 Oct 2024 17:30:42 +0200 (CEST)
+Received: from ideasonboard.com (unknown
+	[IPv6:2a00:6020:448c:6c00:d:f30b:aa60:fabf])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id 4206ADB2;
+	Tue,  8 Oct 2024 17:29:05 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1728401345;
+	bh=Re0mu06kI6Sfde7TA4UbsLGtdKbF48gupVAj5GIZQ8M=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=XB8EdfLjRXOkyAC3H7tfFML7dJWmhTZbTD+BEaph26OGwoQ8blXva8e7u33D3DK1W
+	1olbr/gFZe1vMlFDl7Ai/6m6P+QEOqkcZhteRJxJ+QRfjvzTZOrOm9rw5ZaYJseFIf
+	sNCWk5yC96LDcVW6YlDkfMzabkT5AKy6kY3bFaC0=
+From: Stefan Klug <stefan.klug@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Stefan Klug <stefan.klug@ideasonboard.com>
+Subject: [PATCH v3 2/7] libcamera: Add a DebugMetadata helper
+Date: Tue,  8 Oct 2024 17:29:40 +0200
+Message-ID: <20241008153031.429906-3-stefan.klug@ideasonboard.com>
+X-Mailer: git-send-email 2.43.0
+In-Reply-To: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+References: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+Debug metadata often occurs in places where the metadata control list is
+not available e.g. in queueRequest() or processStatsBuffer() or even in
+a class far away from the metadata handling code. It is therefore
+difficult to add debug metadata without adding lots of boilerplate
+code. This can be mitigated by recording the metadata and forwarding it
+to the metadata control list when it becomes available. To solve the
+issue of code that is far away from the metadata context, add a chaining
+mechanism to allow loose coupling at runtime.
+
+Signed-off-by: Stefan Klug <stefan.klug@ideasonboard.com>
+Reviewed-by: Kieran Bingham <kieran.bingham@ideasonboard.com>
+---
+Changes in v3:
+- Rename checkForEnable by enableByControl
+- Remove explicit template params in set
+- Improve documentation
+
+Changes in v2:
+- Replace assignments of ControlList by a moveEntries function
+- Replace assignUpstream by setParent
+- Improve documentation
+---
+ include/libcamera/internal/debug_controls.h |  46 ++++++
+ include/libcamera/internal/meson.build      |   1 +
+ src/libcamera/control_ids_core.yaml         |   5 +
+ src/libcamera/debug_controls.cpp            | 164 ++++++++++++++++++++
+ src/libcamera/meson.build                   |   1 +
+ 5 files changed, 217 insertions(+)
+ create mode 100644 include/libcamera/internal/debug_controls.h
+ create mode 100644 src/libcamera/debug_controls.cpp
+
+diff --git a/include/libcamera/internal/debug_controls.h b/include/libcamera/internal/debug_controls.h
+new file mode 100644
+index 000000000000..0b049f48e246
+--- /dev/null
++++ b/include/libcamera/internal/debug_controls.h
+@@ -0,0 +1,46 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++/*
++ * Copyright (C) 2024, Google Inc.
++ *
++ * Debug metadata helpers
++ */
++
++#pragma once
++
++#include <libcamera/control_ids.h>
++
++namespace libcamera {
++
++class DebugMetadata
++{
++public:
++	DebugMetadata() = default;
++
++	void enableByControl(const ControlList &controls);
++	void enable(bool enable = true);
++	void setParent(DebugMetadata *parent);
++	void moveEntries(ControlList &list);
++
++	template<typename T, typename V>
++	void set(const Control<T> &ctrl, const V &value)
++	{
++		if (parent_) {
++			parent_->set(ctrl, value);
++			return;
++		}
++
++		if (!enabled_)
++			return;
++
++		cache_.set(ctrl, value);
++	}
++
++	void set(unsigned int id, const ControlValue &value);
++
++private:
++	bool enabled_ = false;
++	DebugMetadata *parent_ = nullptr;
++	ControlList cache_;
++};
++
++} /* namespace libcamera */
+diff --git a/include/libcamera/internal/meson.build b/include/libcamera/internal/meson.build
+index 1c5eef9cab80..1dddcd50c90b 100644
+--- a/include/libcamera/internal/meson.build
++++ b/include/libcamera/internal/meson.build
+@@ -14,6 +14,7 @@ libcamera_internal_headers = files([
+     'control_serializer.h',
+     'control_validator.h',
+     'converter.h',
++    'debug_controls.h',
+     'delayed_controls.h',
+     'device_enumerator.h',
+     'device_enumerator_sysfs.h',
+diff --git a/src/libcamera/control_ids_core.yaml b/src/libcamera/control_ids_core.yaml
+index 1b1bd9507d25..d34a2d068b60 100644
+--- a/src/libcamera/control_ids_core.yaml
++++ b/src/libcamera/control_ids_core.yaml
+@@ -968,4 +968,9 @@ controls:
+         The default gamma value must be 2.2 which closely mimics sRGB gamma.
+         Note that this is camera gamma, so it is applied as 1.0/gamma.
+ 
++  - DebugMetadataEnable:
++      type: bool
++      description: |
++        Enable or disable the debug metadata.
++
+ ...
+diff --git a/src/libcamera/debug_controls.cpp b/src/libcamera/debug_controls.cpp
+new file mode 100644
+index 000000000000..27a05592a97a
+--- /dev/null
++++ b/src/libcamera/debug_controls.cpp
+@@ -0,0 +1,164 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++/*
++ * Copyright (C) 2024, Google Inc.
++ *
++ * Helper to easily record debug metadata inside libcamera.
++ */
++
++#include "libcamera/internal/debug_controls.h"
++
++#include <libcamera/base/log.h>
++
++namespace libcamera {
++
++LOG_DEFINE_CATEGORY(DebugControls)
++
++/**
++ * \file debug_controls.h
++ * \brief Helper to easily record debug metadata inside libcamera
++ */
++
++/**
++ * \class DebugMetadata
++ * \brief Helper to record metadata for later use
++ *
++ * Metadata is a useful tool for debugging the internal state of libcamera. It
++ * has the benefit that it is easy to use and related tooling is readily
++ * available. The difficulty is that the metadata control list is often not
++ * directly available (either because the variable to debug lives inside
++ * process() of an IPA or inside a closed algorithm class with no direct access
++ * to the ipa and therefore the metadata list).
++ *
++ * This class helps in both cases. It allows to forward the data to a parent or
++ * alternatively record the data and at a later point in time copy it to the
++ * metadata list when it becomes available. Both mechanisms allow easy reuse and
++ * loose coupling.
++ *
++ * The idea is to instantiate a DebugMetadata object in every class/algorithm
++ * where debug metadata shall be recorded (the inner object). If the IPA doesn't
++ * support debug metadata, the object is still usable, but the debug data gets
++ * dropped. If the IPA supports debug metadata it will either register a parent
++ * DebugMetadata object on the inner object or manually retrieve the data using
++ * enable()/moveToList().
++ *
++ * The concepts of forwarding to a parent and recording for later retrieval are
++ * mutually exclusive and the parent takes precedence. E.g. it is not allowed to
++ * enable a DebugMetadata object, log entries to it and later set the parent.
++ *
++ * This is done to keep the path open for using other means of data transport
++ * (like tracing). For every tracing event a corresponding context needs to be
++ * available on set() time. The parent can be treated as such, the top level
++ * object (the one where enable() get's called) also lives in a place where that
++ * information is also available.
++ */
++
++/**
++ * \fn DebugMetadata::enableByControl()
++ * \brief Enable based on controls::DebugMetadataEnable in the supplied
++ * ControlList
++ * \param[in] controls The supplied ControlList
++ *
++ * Looks for controls::DebugMetadataEnable and enables or disables debug
++ * metadata handling accordingly.
++ */
++void DebugMetadata::enableByControl(const ControlList &controls)
++{
++	const auto &ctrl = controls.get(controls::DebugMetadataEnable);
++	if (ctrl)
++		enable(*ctrl);
++}
++
++/**
++ * \fn DebugMetadata::enable()
++ * \brief Enable or disable metadata handling
++ * \param[in] enable The enable state
++ *
++ * When \a enable is true, all calls to set() get cached and can later be
++ * retrieved using moveEntries(). When \a enable is false, the cache gets
++ * cleared and no further metadata is recorded.
++ *
++ * Forwarding to a parent is independent of the enabled state.
++ */
++void DebugMetadata::enable(bool enable)
++{
++	enabled_ = enable;
++	if (!enabled_)
++		cache_.clear();
++}
++
++/**
++ * \fn DebugMetadata::setParent()
++ * \brief Set the parent metadata handler to \a parent
++ * \param[in] parent Pointer to the parent handler
++ *
++ * When a \a parent is set, all further calls to set() are unconditionally
++ * forwarded to that instance.
++ *
++ * The parent can be reset by passing a nullptr.
++ */
++void DebugMetadata::setParent(DebugMetadata *parent)
++{
++	parent_ = parent;
++
++	if (!parent_)
++		return;
++
++	if (!cache_.empty())
++		LOG(DebugControls, Error)
++			<< "Controls were recorded before setting a parent."
++			<< " These are dropped.";
++
++	cache_.clear();
++}
++
++/**
++ * \fn DebugMetadata::moveEntries()
++ * \brief Move all cached entries into control list \a list
++ * \param[in] list The control list
++ *
++ * This function moves all entries into the list specified by \a list. Duplicate
++ * entries in \a list get overwritten.
++ */
++void DebugMetadata::moveEntries(ControlList &list)
++{
++	list.merge(std::move(cache_), ControlList::MergePolicy::OverwriteExisting);
++	cache_.clear();
++}
++
++/**
++ * \fn DebugMetadata::set(const Control<T> &ctrl, const V &value)
++ * \brief Set the value of \a ctrl to \a value
++ * \param[in] ctrl The control to set
++ * \param[in] value The control value
++ *
++ * If a parent is set, the value gets passed there unconditionally. Otherwise it
++ * gets cached if the instance is enabled or dropped silently when disabled.
++ *
++ * \sa enable()
++ */
++
++/**
++ * \fn DebugMetadata::set(unsigned int id, const ControlValue &value)
++ * \brief Set the value of control \a id to \a value
++ * \param[in] id The id of the control
++ * \param[in] value The control value
++ *
++ * If a parent is set, the value gets passed there unconditionally. Otherwise it
++ * gets cached if the instance is enabled or dropped silently when disabled.
++ *
++ * \sa enable()
++ */
++void DebugMetadata::set(unsigned int id, const ControlValue &value)
++{
++	if (parent_) {
++		parent_->set(id, value);
++		return;
++	}
++
++	if (!enabled_)
++		return;
++
++	cache_.set(id, value);
++}
++
++} /* namespace libcamera */
+diff --git a/src/libcamera/meson.build b/src/libcamera/meson.build
+index aa9ab0291854..f7b5ee8dcc34 100644
+--- a/src/libcamera/meson.build
++++ b/src/libcamera/meson.build
+@@ -25,6 +25,7 @@ libcamera_internal_sources = files([
+     'control_validator.cpp',
+     'converter.cpp',
+     'delayed_controls.cpp',
++    'debug_controls.cpp',
+     'device_enumerator.cpp',
+     'device_enumerator_sysfs.cpp',
+     'dma_buf_allocator.cpp',
+
+From patchwork Tue Oct  8 15:29:41 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Stefan Klug <stefan.klug@ideasonboard.com>
+X-Patchwork-Id: 21541
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id E2866BE080
+	for <parsemail@patchwork.libcamera.org>;
+	Tue,  8 Oct 2024 15:30:47 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 9E2726536E;
+	Tue,  8 Oct 2024 17:30:47 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="dvAxXQCp"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[213.167.242.64])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 9A89B65369
+	for <libcamera-devel@lists.libcamera.org>;
+	Tue,  8 Oct 2024 17:30:44 +0200 (CEST)
+Received: from ideasonboard.com (unknown
+	[IPv6:2a00:6020:448c:6c00:d:f30b:aa60:fabf])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id EDDC1514;
+	Tue,  8 Oct 2024 17:29:07 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1728401348;
+	bh=YV95Co6rlo7QJYIhiN997feMCPkkLZnyIwy0hYKcxaQ=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=dvAxXQCpWXTRQXQABLzKbYoZFMqA+1sswaxR/Lwxq6ITaOdMnXZH+S7zLcsKxmxk2
+	PtgLq66vfDmMon1v/waQfvUm33z06KGoASH4bqCPC2KAASJcIlb+ukomobwJGQt/R6
+	yqOyYObgp+Al6qvGvVKI+G/wog06YIh9YBpM6hnc=
+From: Stefan Klug <stefan.klug@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Stefan Klug <stefan.klug@ideasonboard.com>
+Subject: [PATCH v3 3/7] utils: Add script to generate control_ids_debug.yaml
+Date: Tue,  8 Oct 2024 17:29:41 +0200
+Message-ID: <20241008153031.429906-4-stefan.klug@ideasonboard.com>
+X-Mailer: git-send-email 2.43.0
+In-Reply-To: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+References: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+For flexible debugging it is helpful to minimize the roundtrip time.
+This script parses the source tree and looks for usages of
+
+set<type>(controls::debug::Something,
+
+and adds (or removes) the controls as necessary from the yaml
+description. It is meant to be used during development to ease the
+creation of the correct yaml entries.
+
+Signed-off-by: Stefan Klug <stefan.klug@ideasonboard.com>
+Reviewed-by: Kieran Bingham <kieran.bingham@ideasonboard.com>
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+---
+Changes in v3:
+- Remove superfluous comma and args variable
+- Default to ruamel.yaml instead of ruyaml
+- Small fixes on layout/comments
+
+Changes in v2:
+- Search only until the first comma of the set() call, to allow
+  linebreaks there.
+- Support ruamel.yaml as fallback
+- Rename output to ctrl_file
+- Add "generated by" comment in yaml file
+---
+ utils/gen-debug-controls.py | 162 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 162 insertions(+)
+ create mode 100755 utils/gen-debug-controls.py
+
+diff --git a/utils/gen-debug-controls.py b/utils/gen-debug-controls.py
+new file mode 100755
+index 000000000000..025850731c0b
+--- /dev/null
++++ b/utils/gen-debug-controls.py
+@@ -0,0 +1,162 @@
++#!/usr/bin/env python3
++# SPDX-License-Identifier: GPL-2.0-or-later
++# Copyright (C) 2024, Google Inc.
++#
++# Author: Stefan Klug <stefan.klug@ideasonboard.com>
++#
++# This script looks for occurrences of the debug metadata controls in the source
++# tree and updates src/libcamera/control_ids_debug.yaml accordingly. It is meant
++# to be used during development to ease updating of the yaml file while
++# debugging.
++
++import argparse
++import logging
++import os
++import re
++import sys
++from dataclasses import dataclass
++from pathlib import Path
++
++logger = logging.getLogger(__name__)
++logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
++
++try:
++    import ruamel.yaml as ruyaml
++except:
++    logger.error(
++        f'Failed to import ruamel.yaml. Please install the ruamel.yaml package.')
++    sys.exit(1)
++
++@dataclass
++class FoundMatch:
++    file: os.PathLike
++    whole_match: str
++    line: int
++    type: str
++    name: str
++    size: str = None
++
++
++def get_control_name(control):
++    k = list(control.keys())
++    if len(k) != 1:
++        raise Exception(f"Can't handle control entry with {len(k)} keys")
++    return k[0]
++
++
++def find_debug_controls(dir):
++    extensions = ['.cpp', '.h']
++    files = [p for p in dir.rglob('*') if p.suffix in extensions]
++
++    # The following regex was tested on
++    # set<Span<type>>( controls::debug::something , static_cast<type>(var) )
++    # set<>( controls::debug::something , static_cast<type>(var) )
++    # set( controls::debug::something , static_cast<type> (var) )
++    exp = re.compile(r'set'  # set function
++                     r'(?:\<((?:[^)(])*)\>)?'  # followed by a optional template param
++                     r'\(\s*controls::debug::(\w+)\s*,'  # referencing a debug control
++                     )
++    matches = []
++    for p in files:
++        with p.open('r') as f:
++            for idx, line in enumerate(f):
++                match = exp.search(line)
++                if match:
++                    m = FoundMatch(file=p, line=idx, type=match.group(1),
++                                   name=match.group(2), whole_match=match.group(0))
++                    if m.type is not None and m.type.startswith('Span'):
++                        # Simple span type detection treating the last word
++                        # inside <> as type.
++                        r = re.match(r'Span<(?:.*\s+)(.*)>', m.type)
++                        m.type = r.group(1)
++                        m.size = '[n]'
++                    matches.append(m)
++    return matches
++
++
++def main(argv):
++    parser = argparse.ArgumentParser(
++        description='Automatically updates control_ids_debug.yaml')
++    parser.parse_args(argv[1:])
++
++    yaml = ruyaml.YAML()
++    root_dir = Path(__file__).resolve().parent.parent
++    ctrl_file = root_dir.joinpath('src/libcamera/control_ids_debug.yaml')
++
++    matches = find_debug_controls(root_dir.joinpath('src'))
++
++    doc = yaml.load(ctrl_file)
++
++    controls = doc['controls']
++
++    # Create a map of names in the existing yaml for easier updating.
++    controls_map = {}
++    for control in controls:
++        for k, v in control.items():
++            controls_map[k] = v
++
++    obsolete_names = list(controls_map.keys())
++
++    for m in matches:
++        if not m.type:
++            p = m.file.relative_to(Path.cwd(), walk_up=True)
++            logger.warning(
++                f'{p}:{m.line + 1}: Failed to deduce type from {m.whole_match} ... skipping')
++            continue
++
++        p = m.file.relative_to(root_dir)
++        desc = {'type': m.type,
++                'description': f'Debug control {m.name} found in {p}:{m.line}'}
++        if m.size is not None:
++            desc['size'] = m.size
++
++        if m.name in controls_map:
++            # Can't use == for modified check because of the special yaml dicts.
++            update_needed = False
++            if list(controls_map[m.name].keys()) != list(desc.keys()):
++                update_needed = True
++            else:
++                for k, v in controls_map[m.name].items():
++                    if v != desc[k]:
++                        update_needed = True
++                        break
++
++            if update_needed:
++                logger.info(f"Update control '{m.name}'")
++                controls_map[m.name].clear()
++                controls_map[m.name].update(desc)
++
++            obsolete_names.remove(m.name)
++        else:
++            logger.info(f"Add control '{m.name}'")
++            insert_before = len(controls)
++            for idx, control in enumerate(controls):
++                if get_control_name(control).lower() > m.name.lower():
++                    insert_before = idx
++                    break
++            controls.insert(insert_before, {m.name: desc})
++
++    # Remove elements from controls without recreating the list (to keep
++    # comments etc.).
++    idx = 0
++    while idx < len(controls):
++        name = get_control_name(controls[idx])
++        if name in obsolete_names:
++            logger.info(f"Remove control '{name}'")
++            controls.pop(idx)
++        else:
++            idx += 1
++
++    with ctrl_file.open('w') as f:
++        # Ruyaml looses the header.
++        f.write(("# SPDX-License-Identifier: LGPL-2.1-or-later\n"
++                 "#\n"
++                 "# This file was generated by utils/gen-debug-controls.py\n"
++                 "#\n"))
++        yaml.dump(doc, f)
++
++    return 0
++
++
++if __name__ == '__main__':
++    sys.exit(main(sys.argv))
+
+From patchwork Tue Oct  8 15:29:42 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Stefan Klug <stefan.klug@ideasonboard.com>
+X-Patchwork-Id: 21542
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id B9677BE080
+	for <parsemail@patchwork.libcamera.org>;
+	Tue,  8 Oct 2024 15:30:49 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 6C8986536D;
+	Tue,  8 Oct 2024 17:30:49 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="rMB5Cc5I"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[213.167.242.64])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 631EC65363
+	for <libcamera-devel@lists.libcamera.org>;
+	Tue,  8 Oct 2024 17:30:47 +0200 (CEST)
+Received: from ideasonboard.com (unknown
+	[IPv6:2a00:6020:448c:6c00:d:f30b:aa60:fabf])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id B5123514;
+	Tue,  8 Oct 2024 17:29:10 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1728401350;
+	bh=FGj48CRnmw837TOdKjFASRFcdEff4M7K5Azl/VJ6KuU=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=rMB5Cc5ID16BHAgqm1Y1HN6jMF9ykK/xk6nxTDuoKYeCw/hepsjRLm53Dekzk0pvk
+	3SmnYGqbhtbaEjguoLl8oDGU7Jf1LqVnZ+KfV+0oefJGaBAjF6/RpN4HfQ5uej0+2l
+	9YCgD50ddD04r3pNtllj6HU6/2Qax9IuHM4VHJso=
+From: Stefan Klug <stefan.klug@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Stefan Klug <stefan.klug@ideasonboard.com>,
+	Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+	Kieran Bingham <kieran.bingham@ideasonboard.com>
+Subject: [PATCH v3 4/7] ipa: rkisp1: Add constructor to the ipa context
+Date: Tue,  8 Oct 2024 17:29:42 +0200
+Message-ID: <20241008153031.429906-5-stefan.klug@ideasonboard.com>
+X-Mailer: git-send-email 2.43.0
+In-Reply-To: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+References: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+Initialization using the initializer list is cumbersome and requires
+modifications to the list whenever the context is modified. Fix that by
+adding a proper constructor to the context.
+
+Signed-off-by: Stefan Klug <stefan.klug@ideasonboard.com>
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Reviewed-by: Kieran Bingham <kieran.bingham@ideasonboard.com>
+---
+ src/ipa/rkisp1/ipa_context.h | 5 +++++
+ src/ipa/rkisp1/rkisp1.cpp    | 2 +-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/ipa/rkisp1/ipa_context.h b/src/ipa/rkisp1/ipa_context.h
+index e274d9b01e1c..d52e73ad2503 100644
+--- a/src/ipa/rkisp1/ipa_context.h
++++ b/src/ipa/rkisp1/ipa_context.h
+@@ -180,6 +180,11 @@ struct IPAFrameContext : public FrameContext {
+ };
+ 
+ struct IPAContext {
++	IPAContext(unsigned int frameContextSize)
++		: hw(nullptr), frameContexts(frameContextSize)
++	{
++	}
++
+ 	const IPAHwSettings *hw;
+ 	IPACameraSensorInfo sensorInfo;
+ 	IPASessionConfiguration configuration;
+diff --git a/src/ipa/rkisp1/rkisp1.cpp b/src/ipa/rkisp1/rkisp1.cpp
+index 9e161cabdea4..a579f21de56f 100644
+--- a/src/ipa/rkisp1/rkisp1.cpp
++++ b/src/ipa/rkisp1/rkisp1.cpp
+@@ -124,7 +124,7 @@ const ControlInfoMap::Map rkisp1Controls{
+ } /* namespace */
+ 
+ IPARkISP1::IPARkISP1()
+-	: context_({ {}, {}, {}, {}, { kMaxFrameContexts }, {}, {} })
++	: context_(kMaxFrameContexts)
+ {
+ }
+ 
+
+From patchwork Tue Oct  8 15:29:43 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Stefan Klug <stefan.klug@ideasonboard.com>
+X-Patchwork-Id: 21543
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 5DDD4BE080
+	for <parsemail@patchwork.libcamera.org>;
+	Tue,  8 Oct 2024 15:30:52 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 189706536D;
+	Tue,  8 Oct 2024 17:30:52 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="A6CXNl4W"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[213.167.242.64])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 9D7D46536A
+	for <libcamera-devel@lists.libcamera.org>;
+	Tue,  8 Oct 2024 17:30:50 +0200 (CEST)
+Received: from ideasonboard.com (unknown
+	[IPv6:2a00:6020:448c:6c00:d:f30b:aa60:fabf])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id ECE95DB2;
+	Tue,  8 Oct 2024 17:29:13 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1728401354;
+	bh=3+Lq6lsLzfFRTRA8BeNbNCHJn3NUYJxhESxu73Dh/EY=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=A6CXNl4Wf0fhQixHWqLM6zyAqxxD1n2baIFNu3pnvORo31tawb74uXZTBgd/B//UU
+	zrfckRQGYJ/4J/fOCw8sH70tTnWpbg5uDIF2ond1dFs9ewJPlV6HPQa3hbVKUmkUha
+	iXd84ubI3VshP9kGr5vozHv0WkwpsZaAXbHGHPPY=
+From: Stefan Klug <stefan.klug@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Stefan Klug <stefan.klug@ideasonboard.com>,
+	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: [PATCH v3 5/7] ipa: rkisp1: Add debug metadata support to the rkisp1
+Date: Tue,  8 Oct 2024 17:29:43 +0200
+Message-ID: <20241008153031.429906-6-stefan.klug@ideasonboard.com>
+X-Mailer: git-send-email 2.43.0
+In-Reply-To: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+References: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+Add a DebugMetadata helper to the context and add the corresponding
+plumbing.  This is all that is needed to support debug metadata in an
+IPA.
+
+Signed-off-by: Stefan Klug <stefan.klug@ideasonboard.com>
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Reviewed-by: Kieran Bingham <kieran.bingham@ideasonboard.com>
+---
+Changes in v3:
+- Whitespace changes
+
+Changes in v2:
+- Replace DebugMetadata::assignList by DebugMetadata::moveEntries
+---
+ src/ipa/rkisp1/ipa_context.h | 5 +++++
+ src/ipa/rkisp1/rkisp1.cpp    | 3 +++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/src/ipa/rkisp1/ipa_context.h b/src/ipa/rkisp1/ipa_context.h
+index d52e73ad2503..7b93a9e9461d 100644
+--- a/src/ipa/rkisp1/ipa_context.h
++++ b/src/ipa/rkisp1/ipa_context.h
+@@ -17,8 +17,11 @@
+ #include <libcamera/control_ids.h>
+ #include <libcamera/controls.h>
+ #include <libcamera/geometry.h>
++
+ #include <libcamera/ipa/core_ipa_interface.h>
+ 
++#include "libcamera/internal/debug_controls.h"
++
+ #include <libipa/camera_sensor_helper.h>
+ #include <libipa/fc_queue.h>
+ #include <libipa/matrix.h>
+@@ -194,6 +197,8 @@ struct IPAContext {
+ 
+ 	ControlInfoMap::Map ctrlMap;
+ 
++	DebugMetadata debugMetadata;
++
+ 	/* Interface to the Camera Helper */
+ 	std::unique_ptr<CameraSensorHelper> camHelper;
+ };
+diff --git a/src/ipa/rkisp1/rkisp1.cpp b/src/ipa/rkisp1/rkisp1.cpp
+index a579f21de56f..03eae01baf54 100644
+--- a/src/ipa/rkisp1/rkisp1.cpp
++++ b/src/ipa/rkisp1/rkisp1.cpp
+@@ -117,6 +117,7 @@ const IPAHwSettings ipaHwSettingsV12{
+ const ControlInfoMap::Map rkisp1Controls{
+ 	{ &controls::AwbEnable, ControlInfo(false, true) },
+ 	{ &controls::ColourGains, ControlInfo(0.0f, 3.996f, 1.0f) },
++	{ &controls::DebugMetadataEnable, ControlInfo(false, true, false) },
+ 	{ &controls::Sharpness, ControlInfo(0.0f, 10.0f, 1.0f) },
+ 	{ &controls::draft::NoiseReductionMode, ControlInfo(controls::draft::NoiseReductionModeValues) },
+ };
+@@ -326,6 +327,7 @@ void IPARkISP1::unmapBuffers(const std::vector<unsigned int> &ids)
+ void IPARkISP1::queueRequest(const uint32_t frame, const ControlList &controls)
+ {
+ 	IPAFrameContext &frameContext = context_.frameContexts.alloc(frame);
++	context_.debugMetadata.enableByControl(controls);
+ 
+ 	for (auto const &a : algorithms()) {
+ 		Algorithm *algo = static_cast<Algorithm *>(a.get());
+@@ -378,6 +380,7 @@ void IPARkISP1::processStatsBuffer(const uint32_t frame, const uint32_t bufferId
+ 
+ 	setControls(frame);
+ 
++	context_.debugMetadata.moveEntries(metadata);
+ 	metadataReady.emit(frame, metadata);
+ }
+ 
+
+From patchwork Tue Oct  8 15:29:44 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Stefan Klug <stefan.klug@ideasonboard.com>
+X-Patchwork-Id: 21544
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id C6954BE080
+	for <parsemail@patchwork.libcamera.org>;
+	Tue,  8 Oct 2024 15:30:54 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 8B8C665374;
+	Tue,  8 Oct 2024 17:30:54 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="VOfrcBgD"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[IPv6:2001:4b98:dc2:55:216:3eff:fef7:d647])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id E37EA65372
+	for <libcamera-devel@lists.libcamera.org>;
+	Tue,  8 Oct 2024 17:30:52 +0200 (CEST)
+Received: from ideasonboard.com (unknown
+	[IPv6:2a00:6020:448c:6c00:d:f30b:aa60:fabf])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id 3812FDB2;
+	Tue,  8 Oct 2024 17:29:16 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1728401356;
+	bh=LWH0Fjvo2R3wNXd0L9iqL8mPrb5JPIZ/8rxsFKxYbeA=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=VOfrcBgD7U6rAOIVtLjcvTJ9QDZRduh/Dnuv9N2CeKYJ3qNjOXyebUTqnE67xQEmW
+	ozkuU6X2xm55TNfn8sfgM4/j7CYEVTS2zRuF/j038dPgNBOclfAheHKpdWcxjDcQsP
+	27lMHBtoOuRcE2KCZ+Xn0H1/UrSKzO9b5wU/hXLA=
+From: Stefan Klug <stefan.klug@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Stefan Klug <stefan.klug@ideasonboard.com>,
+	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: [PATCH v3 6/7] ipa: libipa: Add data accessor to Histogram
+Date: Tue,  8 Oct 2024 17:29:44 +0200
+Message-ID: <20241008153031.429906-7-stefan.klug@ideasonboard.com>
+X-Mailer: git-send-email 2.43.0
+In-Reply-To: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+References: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+For debugging purposes it is helpful to access the internal data of the
+histogram.  Add an accessor for that.
+
+Signed-off-by: Stefan Klug <stefan.klug@ideasonboard.com>
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Reviewed-by: Kieran Bingham <kieran.bingham@ideasonboard.com>
+---
+Changes in v2:
+- return Span instead of reference to std::vector
+---
+ src/ipa/libipa/histogram.cpp | 6 ++++++
+ src/ipa/libipa/histogram.h   | 1 +
+ 2 files changed, 7 insertions(+)
+
+diff --git a/src/ipa/libipa/histogram.cpp b/src/ipa/libipa/histogram.cpp
+index 5fbfadf5e4e1..10e44b54a0cf 100644
+--- a/src/ipa/libipa/histogram.cpp
++++ b/src/ipa/libipa/histogram.cpp
+@@ -62,6 +62,12 @@ Histogram::Histogram(Span<const uint32_t> data)
+  * \return Number of bins
+  */
+ 
++/**
++ * \fn Histogram::data()
++ * \brief Retrieve the internal data
++ * \return The data
++ */
++
+ /**
+  * \fn Histogram::total()
+  * \brief Retrieve the total number of values in the data set
+diff --git a/src/ipa/libipa/histogram.h b/src/ipa/libipa/histogram.h
+index 6fd641683694..a926002c8cf0 100644
+--- a/src/ipa/libipa/histogram.h
++++ b/src/ipa/libipa/histogram.h
+@@ -36,6 +36,7 @@ public:
+ 	}
+ 
+ 	size_t bins() const { return cumulative_.size() - 1; }
++	const Span<const uint64_t> data() const { return cumulative_; }
+ 	uint64_t total() const { return cumulative_[cumulative_.size() - 1]; }
+ 	uint64_t cumulativeFrequency(double bin) const;
+ 	double quantile(double q, uint32_t first = 0, uint32_t last = UINT_MAX) const;
+
+From patchwork Tue Oct  8 15:29:45 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Stefan Klug <stefan.klug@ideasonboard.com>
+X-Patchwork-Id: 21545
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 87FF0BE080
+	for <parsemail@patchwork.libcamera.org>;
+	Tue,  8 Oct 2024 15:30:57 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 3DA1365372;
+	Tue,  8 Oct 2024 17:30:57 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="qQUhZkQk"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[213.167.242.64])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 8FB636536A
+	for <libcamera-devel@lists.libcamera.org>;
+	Tue,  8 Oct 2024 17:30:55 +0200 (CEST)
+Received: from ideasonboard.com (unknown
+	[IPv6:2a00:6020:448c:6c00:d:f30b:aa60:fabf])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id D3EF1DB2;
+	Tue,  8 Oct 2024 17:29:18 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1728401359;
+	bh=xXC1lV3srrMK+FRTgwh3EhB+5Y4Y/P6sCYisSUXpgPo=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=qQUhZkQkIHgO/WxOWKAVxI0k2hgXas7TgySH7zco8Mjz8jwrAvICJS91pbc858Qko
+	xjOsvEMaQH3evUEKSU0Y7cTF84K2pY9dGMqawiOnVBn0RPQXWlXuSc8aX1q6IN8Fxc
+	wMQY9JfL5pB3MRVntyK/oIbugXHC198Na7sHGdcQ=
+From: Stefan Klug <stefan.klug@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Stefan Klug <stefan.klug@ideasonboard.com>
+Subject: [PATCH v3 7/7] [DNI] ipa: Add debug controls to the agc algorithm
+Date: Tue,  8 Oct 2024 17:29:45 +0200
+Message-ID: <20241008153031.429906-8-stefan.klug@ideasonboard.com>
+X-Mailer: git-send-email 2.43.0
+In-Reply-To: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+References: <20241008153031.429906-1-stefan.klug@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+Add a few (arbitrary) debug metadata to the agc algorithm. This shows
+how easy it is to add debug metadata to an ipa even for classes that
+don't have direct access to the metadata list or the context like
+AgcMeanLuminance. The control_ids_debug.yaml was autogenerated by
+calling utils/gen-debug-controls.py
+
+Signed-off-by: Stefan Klug <stefan.klug@ideasonboard.com>
+---
+Update in v2:
+- Break too long line in agc.cpp
+---
+ src/ipa/libipa/agc_mean_luminance.cpp |  8 ++++++++
+ src/ipa/libipa/agc_mean_luminance.h   |  4 ++++
+ src/ipa/rkisp1/algorithms/agc.cpp     | 10 ++++++++++
+ src/libcamera/control_ids_debug.yaml  | 21 ++++++++++++++++++++-
+ 4 files changed, 42 insertions(+), 1 deletion(-)
+
+diff --git a/src/ipa/libipa/agc_mean_luminance.cpp b/src/ipa/libipa/agc_mean_luminance.cpp
+index f97ef11771c4..bd0f85afcd2e 100644
+--- a/src/ipa/libipa/agc_mean_luminance.cpp
++++ b/src/ipa/libipa/agc_mean_luminance.cpp
+@@ -133,6 +133,11 @@ static constexpr double kDefaultRelativeLuminanceTarget = 0.16;
+  * values.
+  */
+ 
++/**
++ * \var AgcMeanLuminance::debugMeta_
++ * \brief DebugMetadata helper
++ */
++
+ AgcMeanLuminance::AgcMeanLuminance()
+ 	: frameCount_(0), filteredExposure_(0s), relativeLuminanceTarget_(0)
+ {
+@@ -541,8 +546,11 @@ AgcMeanLuminance::calculateNewEv(uint32_t constraintModeIndex,
+ 		exposureModeHelpers_.at(exposureModeIndex);
+ 
+ 	double gain = estimateInitialGain();
++	debugMeta_.set<float>(controls::debug::AgcInitialGain, static_cast<float>(gain));
+ 	gain = constraintClampGain(constraintModeIndex, yHist, gain);
+ 
++	debugMeta_.set<float>(controls::debug::AgcNewGain, static_cast<float>(gain));
++
+ 	/*
+ 	 * We don't check whether we're already close to the target, because
+ 	 * even if the effective exposure value is the same as the last frame's
+diff --git a/src/ipa/libipa/agc_mean_luminance.h b/src/ipa/libipa/agc_mean_luminance.h
+index 576d28be8eb0..428465a11a36 100644
+--- a/src/ipa/libipa/agc_mean_luminance.h
++++ b/src/ipa/libipa/agc_mean_luminance.h
+@@ -16,6 +16,7 @@
+ 
+ #include <libcamera/controls.h>
+ 
++#include "libcamera/internal/debug_controls.h"
+ #include "libcamera/internal/yaml_parser.h"
+ 
+ #include "exposure_mode_helper.h"
+@@ -71,6 +72,9 @@ public:
+ 		frameCount_ = 0;
+ 	}
+ 
++protected:
++	DebugMetadata debugMeta_;
++
+ private:
+ 	virtual double estimateLuminance(const double gain) const = 0;
+ 
+diff --git a/src/ipa/rkisp1/algorithms/agc.cpp b/src/ipa/rkisp1/algorithms/agc.cpp
+index 17d074d9c03e..6668db942042 100644
+--- a/src/ipa/rkisp1/algorithms/agc.cpp
++++ b/src/ipa/rkisp1/algorithms/agc.cpp
+@@ -139,6 +139,8 @@ int Agc::init(IPAContext &context, const YamlObject &tuningData)
+ {
+ 	int ret;
+ 
++	debugMeta_.setParent(&context.debugMetadata);
++
+ 	ret = parseTuningData(tuningData);
+ 	if (ret)
+ 		return ret;
+@@ -444,6 +446,14 @@ void Agc::process(IPAContext &context, [[maybe_unused]] const uint32_t frame,
+ 			       frameContext.agc.exposureMode,
+ 			       hist, effectiveExposureValue);
+ 
++	debugMeta_.set<float>(controls::debug::AgcAnalogGain, aGain);
++	debugMeta_.set<float>(controls::debug::AgcDigitalGain, dGain);
++
++	const Span<const uint64_t> orig = hist.data();
++	const Span<const int64_t> data{ reinterpret_cast<const int64_t *>(&orig[0]),
++					orig.size() };
++	debugMeta_.set<Span<const int64_t>>(controls::debug::AgcHistogram, data);
++
+ 	LOG(RkISP1Agc, Debug)
+ 		<< "Divided up shutter, analogue gain and digital gain are "
+ 		<< shutterTime << ", " << aGain << " and " << dGain;
+diff --git a/src/libcamera/control_ids_debug.yaml b/src/libcamera/control_ids_debug.yaml
+index 797532712099..356eea627f0f 100644
+--- a/src/libcamera/control_ids_debug.yaml
++++ b/src/libcamera/control_ids_debug.yaml
+@@ -1,6 +1,25 @@
+ # SPDX-License-Identifier: LGPL-2.1-or-later
+ #
++# This file was generated by utils/gen-debug-controls.py
++#
+ %YAML 1.1
+ ---
+ vendor: debug
+-controls: []
++controls:
++- AgcAnalogGain:
++    type: float
++    description: Debug control AgcAnalogGain found in src/ipa/rkisp1/algorithms/agc.cpp:448
++- AgcDigitalGain:
++    type: float
++    description: Debug control AgcDigitalGain found in src/ipa/rkisp1/algorithms/agc.cpp:449
++- AgcHistogram:
++    type: int64_t
++    description: Debug control AgcHistogram found in src/ipa/rkisp1/algorithms/agc.cpp:454
++    size: '[n]'
++- AgcInitialGain:
++    type: float
++    description: Debug control AgcInitialGain found in src/ipa/libipa/agc_mean_luminance.cpp:548
++- AgcNewGain:
++    type: float
++    description: Debug control AgcNewGain found in src/ipa/libipa/agc_mean_luminance.cpp:551
++

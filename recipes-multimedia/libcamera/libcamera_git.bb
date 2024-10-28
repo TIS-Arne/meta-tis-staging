@@ -8,17 +8,25 @@ LIC_FILES_CHKSUM = "\
     file://LICENSES/LGPL-2.1-or-later.txt;md5=2a4f4fd2128ea2f65047ee63fbca9f68 \
 "
 
-#SRC_URI = "git://git.libcamera.org/libcamera/libcamera.git;protocol=https;branch=master"
-SRC_URI = "git://git@gitlab.theimagingsource.com:49107/nxp-imx/libcamera.git;protocol=ssh;branch=arne"
+SRC_URI = " \
+    git://git.libcamera.org/libcamera/libcamera.git;protocol=https;branch=master \
+    file://0001-rkisp1-Plumb-the-DW100-dewarper-as-converter.patch \
+    file://0002-Add-support-for-IPA-debugging-metadata.patch \
+    file://0003-ipa-rkisp1-Honor-FrameDurationLimits.patch \
+    "
+
+#SRC_URI = "git://git@gitlab.theimagingsource.com:49107/nxp-imx/libcamera.git;protocol=ssh;branch=arne"
 
 #SRCREV = "aee16c06913422a0ac84ee3217f87a9795e3c2d9"
-SRCREV = "72647e7d851ccac1d88932799c2cb5e8a24bcb11"
+#SRCREV = "72647e7d851ccac1d88932799c2cb5e8a24bcb11"
+SRCREV = "994588fb75838b46d5eb74b916d66f0b9fc49421"
+
 
 PE = "1"
 
 S = "${WORKDIR}/git"
 
-DEPENDS = "python3-pyyaml-native python3-jinja2-native python3-ply-native python3-jinja2-native udev gnutls chrpath-native libevent libyaml"
+DEPENDS = "python3-pyyaml-native python3-jinja2-native python3-ply-native python3-jinja2-native udev gnutls chrpath-native libevent libyaml tiff"
 DEPENDS += "${@bb.utils.contains('DISTRO_FEATURES', 'qt', 'qtbase qtbase-native', '', d)}"
 
 PACKAGES =+ "${PN}-gst"
@@ -29,7 +37,7 @@ PACKAGECONFIG[gst] = "-Dgstreamer=enabled,-Dgstreamer=disabled,gstreamer1.0 gstr
 PACKAGECONFIG[pycamera] = "-Dpycamera=enabled,-Dpycamera=disabled,python3 python3-pybind11"
 PACKAGECONFIG[qcam] = "-Dqcam=enabled,-Dqcam=disabled,qtbase qttools qttools-native"
 
-LIBCAMERA_PIPELINES ??= "auto"
+LIBCAMERA_PIPELINES ??= "rkisp1,uvcvideo"
 
 EXTRA_OEMESON = " \
     -Dpipelines=${LIBCAMERA_PIPELINES} \

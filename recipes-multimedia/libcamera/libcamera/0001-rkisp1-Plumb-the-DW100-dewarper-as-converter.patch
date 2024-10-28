@@ -1,0 +1,1163 @@
+From patchwork Thu Sep 26 09:36:20 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Umang Jain <umang.jain@ideasonboard.com>
+X-Patchwork-Id: 21377
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 295B6C3257
+	for <parsemail@patchwork.libcamera.org>;
+	Thu, 26 Sep 2024 09:36:39 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id B32D46350E;
+	Thu, 26 Sep 2024 11:36:38 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="e0clTj3/"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[IPv6:2001:4b98:dc2:55:216:3eff:fef7:d647])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 3A93E634FB
+	for <libcamera-devel@lists.libcamera.org>;
+	Thu, 26 Sep 2024 11:36:35 +0200 (CEST)
+Received: from localhost.localdomain (unknown
+	[IPv6:2405:201:2015:f873:55f8:639e:8e9f:12ec])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id 40C67D80;
+	Thu, 26 Sep 2024 11:35:06 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1727343307;
+	bh=S99GqCK6+UJwt8YdATcB/WOR56/UU/5GwdyfW01ZR4o=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=e0clTj3/1ojM+uGZZqyKL1Sac9DTxgHZmy6LQuArRTtIY+JO6XzFIk/gVFzPcdj5b
+	PEn8EWitlUrI2gNxE/I4zzVGpRaVlpWNoXkyBdByEFvk91O3sFRRXGpy/Hfn4R05OX
+	iTg3bcaE00wz8wM2W6JliewvqPsrtm8tJwC/IxL0=
+From: Umang Jain <umang.jain@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+	Stefan Klug <stefan.klug@ideasonboard.com>,
+	Umang Jain <umang.jain@ideasonboard.com>,
+	Kieran Bingham <kieran.bingham@ideasonboard.com>,
+	Paul Elder <paul.elder@ideasonboard.com>
+Subject: [PATCH v8 1/4] libcamera: converter: Add interface for feature flags
+Date: Thu, 26 Sep 2024 15:06:20 +0530
+Message-ID: <20240926093623.94136-2-umang.jain@ideasonboard.com>
+X-Mailer: git-send-email 2.45.0
+In-Reply-To: <20240926093623.94136-1-umang.jain@ideasonboard.com>
+References: <20240926093623.94136-1-umang.jain@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+This patch intends to extend the converter interface to have feature
+flags, which enables each converter to expose the set of features
+it supports.
+
+Signed-off-by: Umang Jain <umang.jain@ideasonboard.com>
+Reviewed-by: Kieran Bingham <kieran.bingham@ideasonboard.com>
+Reviewed-by: Paul Elder <paul.elder@ideasonboard.com>
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+---
+ include/libcamera/internal/converter.h        | 14 +++++++++-
+ src/libcamera/converter.cpp                   | 27 ++++++++++++++++++-
+ .../converter/converter_v4l2_m2m.cpp          |  4 +++
+ 3 files changed, 43 insertions(+), 2 deletions(-)
+
+diff --git a/include/libcamera/internal/converter.h b/include/libcamera/internal/converter.h
+index b51563d7..6623de4d 100644
+--- a/include/libcamera/internal/converter.h
++++ b/include/libcamera/internal/converter.h
+@@ -17,6 +17,7 @@
+ #include <vector>
+ 
+ #include <libcamera/base/class.h>
++#include <libcamera/base/flags.h>
+ #include <libcamera/base/signal.h>
+ 
+ #include <libcamera/geometry.h>
+@@ -32,7 +33,13 @@ struct StreamConfiguration;
+ class Converter
+ {
+ public:
+-	Converter(MediaDevice *media);
++	enum class Feature {
++		None = 0,
++	};
++
++	using Features = Flags<Feature>;
++
++	Converter(MediaDevice *media, Features features = Feature::None);
+ 	virtual ~Converter();
+ 
+ 	virtual int loadConfiguration(const std::string &filename) = 0;
+@@ -61,6 +68,11 @@ public:
+ 
+ 	const std::string &deviceNode() const { return deviceNode_; }
+ 
++	Features features() const { return features_; }
++
++protected:
++	Features features_;
++
+ private:
+ 	std::string deviceNode_;
+ };
+diff --git a/src/libcamera/converter.cpp b/src/libcamera/converter.cpp
+index 8237998f..d7bb7273 100644
+--- a/src/libcamera/converter.cpp
++++ b/src/libcamera/converter.cpp
+@@ -34,14 +34,27 @@ LOG_DEFINE_CATEGORY(Converter)
+  * parameters from the same input stream.
+  */
+ 
++/**
++ * \enum Converter::Feature
++ * \brief Specify the features supported by the converter
++ * \var Converter::Feature::None
++ * \brief No extra features supported by the converter
++ */
++
++/**
++ * \typedef Converter::Features
++ * \brief A bitwise combination of features supported by the converter
++ */
++
+ /**
+  * \brief Construct a Converter instance
+  * \param[in] media The media device implementing the converter
++ * \param[in] features Features flags representing supported features
+  *
+  * This searches for the entity implementing the data streaming function in the
+  * media graph entities and use its device node as the converter device node.
+  */
+-Converter::Converter(MediaDevice *media)
++Converter::Converter(MediaDevice *media, Features features)
+ {
+ 	const std::vector<MediaEntity *> &entities = media->entities();
+ 	auto it = std::find_if(entities.begin(), entities.end(),
+@@ -56,6 +69,7 @@ Converter::Converter(MediaDevice *media)
+ 	}
+ 
+ 	deviceNode_ = (*it)->deviceNode();
++	features_ = features;
+ }
+ 
+ Converter::~Converter()
+@@ -157,12 +171,23 @@ Converter::~Converter()
+  * \brief A signal emitted on each frame buffer completion of the output queue
+  */
+ 
++/**
++ * \var Converter::features_
++ * \brief Stores the features supported by the converter
++ */
++
+ /**
+  * \fn Converter::deviceNode()
+  * \brief The converter device node attribute accessor
+  * \return The converter device node string
+  */
+ 
++/**
++ * \fn Converter::features()
++ * \brief Retrieve the features supported by the converter
++ * \return The converter Features flags
++ */
++
+ /**
+  * \class ConverterFactoryBase
+  * \brief Base class for converter factories
+diff --git a/src/libcamera/converter/converter_v4l2_m2m.cpp b/src/libcamera/converter/converter_v4l2_m2m.cpp
+index e4f656da..4f3e8ce4 100644
+--- a/src/libcamera/converter/converter_v4l2_m2m.cpp
++++ b/src/libcamera/converter/converter_v4l2_m2m.cpp
+@@ -446,6 +446,10 @@ int V4L2M2MConverter::queueBuffers(FrameBuffer *input,
+ 	return 0;
+ }
+ 
++/*
++ * \todo: This should be extended to include Feature::Flag to denote
++ * what each converter supports feature-wise.
++ */
+ static std::initializer_list<std::string> compatibles = {
+ 	"mtk-mdp",
+ 	"pxp",
+
+From patchwork Thu Sep 26 09:36:21 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Umang Jain <umang.jain@ideasonboard.com>
+X-Patchwork-Id: 21378
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id EEA8DC3257
+	for <parsemail@patchwork.libcamera.org>;
+	Thu, 26 Sep 2024 09:36:40 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id 6D1AA63515;
+	Thu, 26 Sep 2024 11:36:39 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="bM0ue/Hh"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[IPv6:2001:4b98:dc2:55:216:3eff:fef7:d647])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id AF0776350B
+	for <libcamera-devel@lists.libcamera.org>;
+	Thu, 26 Sep 2024 11:36:36 +0200 (CEST)
+Received: from localhost.localdomain (unknown
+	[IPv6:2405:201:2015:f873:55f8:639e:8e9f:12ec])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id ADD768D4;
+	Thu, 26 Sep 2024 11:35:07 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1727343308;
+	bh=MmlFVK9zBIfESiISRS9XJwiukPcBDcJZyEqk1+DIrB4=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=bM0ue/HhtAnxKaxYGAEy82yOMUGlRDUHZbFzpaePC2U5lN/Tof/46qxaruk3P9v1W
+	/QrcKR8BHhRzAiVnLYsErKwJLZH/A6v31SkMD0Udv6xuB0V1vPWqax+uw9MPr27oh1
+	IMCgRvxvhu8g5vZrK2qCAHIwj50xcF/6ydGLDG9c=
+From: Umang Jain <umang.jain@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+	Stefan Klug <stefan.klug@ideasonboard.com>,
+	Umang Jain <umang.jain@ideasonboard.com>,
+	Paul Elder <paul.elder@ideasonboard.com>
+Subject: [PATCH v8 2/4] libcamera: converter: Add interface to support
+	cropping capability
+Date: Thu, 26 Sep 2024 15:06:21 +0530
+Message-ID: <20240926093623.94136-3-umang.jain@ideasonboard.com>
+X-Mailer: git-send-email 2.45.0
+In-Reply-To: <20240926093623.94136-1-umang.jain@ideasonboard.com>
+References: <20240926093623.94136-1-umang.jain@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+If the converter has cropping capability on its input, the interface
+should support it by providing appropriate virtual functions. Provide
+Feature::InputCrop in Feature enumeration for the same.
+
+Provide virtual setInputCrop() and inputCropBounds() interfaces so that
+the converter can implement its own cropping functionality.
+
+The V4L2M2MConverter implements these interfaces of the Converter
+interface. Not all V4L2M2M converters will have cropping ability
+on its input, hence it needs to be discovered at construction time.
+If the capability to crop is identified successfully, the cropping
+bounds are determined during configure() time.
+
+Signed-off-by: Umang Jain <umang.jain@ideasonboard.com>
+Reviewed-by: Paul Elder <paul.elder@ideasonboard.com>
+Reviewed-by: Stefan Klug <stefan.klug@ideasonboard.com>
+---
+ include/libcamera/internal/converter.h        |   5 +
+ .../internal/converter/converter_v4l2_m2m.h   |  11 ++
+ src/libcamera/converter.cpp                   |  37 ++++++
+ .../converter/converter_v4l2_m2m.cpp          | 110 ++++++++++++++++++
+ 4 files changed, 163 insertions(+)
+
+diff --git a/include/libcamera/internal/converter.h b/include/libcamera/internal/converter.h
+index 6623de4d..ffbb6f34 100644
+--- a/include/libcamera/internal/converter.h
++++ b/include/libcamera/internal/converter.h
+@@ -14,6 +14,7 @@
+ #include <memory>
+ #include <string>
+ #include <tuple>
++#include <utility>
+ #include <vector>
+ 
+ #include <libcamera/base/class.h>
+@@ -35,6 +36,7 @@ class Converter
+ public:
+ 	enum class Feature {
+ 		None = 0,
++		InputCrop = (1 << 0),
+ 	};
+ 
+ 	using Features = Flags<Feature>;
+@@ -63,6 +65,9 @@ public:
+ 	virtual int queueBuffers(FrameBuffer *input,
+ 				 const std::map<const Stream *, FrameBuffer *> &outputs) = 0;
+ 
++	virtual int setInputCrop(const Stream *stream, Rectangle *rect) = 0;
++	virtual std::pair<Rectangle, Rectangle> inputCropBounds(const Stream *stream) = 0;
++
+ 	Signal<FrameBuffer *> inputBufferReady;
+ 	Signal<FrameBuffer *> outputBufferReady;
+ 
+diff --git a/include/libcamera/internal/converter/converter_v4l2_m2m.h b/include/libcamera/internal/converter/converter_v4l2_m2m.h
+index b9e59899..0bc0d053 100644
+--- a/include/libcamera/internal/converter/converter_v4l2_m2m.h
++++ b/include/libcamera/internal/converter/converter_v4l2_m2m.h
+@@ -30,6 +30,7 @@ class Size;
+ class SizeRange;
+ class Stream;
+ struct StreamConfiguration;
++class Rectangle;
+ class V4L2M2MDevice;
+ 
+ class V4L2M2MConverter : public Converter
+@@ -57,6 +58,9 @@ public:
+ 	int queueBuffers(FrameBuffer *input,
+ 			 const std::map<const Stream *, FrameBuffer *> &outputs);
+ 
++	int setInputCrop(const Stream *stream, Rectangle *rect);
++	std::pair<Rectangle, Rectangle> inputCropBounds(const Stream *stream);
++
+ private:
+ 	class V4L2M2MStream : protected Loggable
+ 	{
+@@ -75,6 +79,11 @@ private:
+ 
+ 		int queueBuffers(FrameBuffer *input, FrameBuffer *output);
+ 
++		int setInputSelection(unsigned int target, Rectangle *rect);
++		int getInputSelection(unsigned int target, Rectangle *rect);
++
++		std::pair<Rectangle, Rectangle> inputCropBounds();
++
+ 	protected:
+ 		std::string logPrefix() const override;
+ 
+@@ -88,6 +97,8 @@ private:
+ 
+ 		unsigned int inputBufferCount_;
+ 		unsigned int outputBufferCount_;
++
++		std::pair<Rectangle, Rectangle> inputCropBounds_;
+ 	};
+ 
+ 	std::unique_ptr<V4L2M2MDevice> m2m_;
+diff --git a/src/libcamera/converter.cpp b/src/libcamera/converter.cpp
+index d7bb7273..945f2527 100644
+--- a/src/libcamera/converter.cpp
++++ b/src/libcamera/converter.cpp
+@@ -11,6 +11,8 @@
+ 
+ #include <libcamera/base/log.h>
+ 
++#include <libcamera/stream.h>
++
+ #include "libcamera/internal/media_device.h"
+ 
+ /**
+@@ -39,6 +41,8 @@ LOG_DEFINE_CATEGORY(Converter)
+  * \brief Specify the features supported by the converter
+  * \var Converter::Feature::None
+  * \brief No extra features supported by the converter
++ * \var Converter::Feature::InputCrop
++ * \brief Cropping capability at input is supported by the converter
+  */
+ 
+ /**
+@@ -161,6 +165,39 @@ Converter::~Converter()
+  * \return 0 on success or a negative error code otherwise
+  */
+ 
++/**
++ * \fn Converter::setInputCrop()
++ * \brief Set the crop rectangle \a rect for \a stream
++ * \param[in] stream The output stream
++ * \param[inout] rect The crop rectangle to apply and return the rectangle
++ * that is actually applied
++ *
++ * Set the crop rectangle \a rect for \a stream provided the converter supports
++ * cropping. The converter has the Feature::InputCrop flag in this case.
++ *
++ * The underlying hardware can adjust the rectangle supplied by the user
++ * due to hardware constraints. The caller can inspect \a rect to determine the
++ * actual rectangle that has been applied by the converter, after this function
++ * returns.
++ *
++ * \return 0 on success or a negative error code otherwise
++ */
++
++/**
++ * \fn Converter::inputCropBounds()
++ * \brief Retrieve the crop bounds for \a stream
++ * \param[in] stream The output stream
++ *
++ * Retrieve the minimum and maximum crop bounds for \a stream. The converter
++ * should support cropping (Feature::InputCrop).
++ *
++ * The crop bounds depend on the configuration of the output stream and hence
++ * this function should be called after the \a stream has been configured using
++ * configure().
++ *
++ * \return A pair containing the minimum and maximum crop bound in that order
++ */
++
+ /**
+  * \var Converter::inputBufferReady
+  * \brief A signal emitted when the input frame buffer completes
+diff --git a/src/libcamera/converter/converter_v4l2_m2m.cpp b/src/libcamera/converter/converter_v4l2_m2m.cpp
+index 4f3e8ce4..d63ef2f8 100644
+--- a/src/libcamera/converter/converter_v4l2_m2m.cpp
++++ b/src/libcamera/converter/converter_v4l2_m2m.cpp
+@@ -97,6 +97,44 @@ int V4L2M2MConverter::V4L2M2MStream::configure(const StreamConfiguration &inputC
+ 	inputBufferCount_ = inputCfg.bufferCount;
+ 	outputBufferCount_ = outputCfg.bufferCount;
+ 
++	if (converter_->features() & Feature::InputCrop) {
++		Rectangle minCrop;
++		Rectangle maxCrop;
++
++		/* Find crop bounds */
++		minCrop.width = 1;
++		minCrop.height = 1;
++		maxCrop.width = UINT_MAX;
++		maxCrop.height = UINT_MAX;
++
++		ret = setInputSelection(V4L2_SEL_TGT_CROP, &minCrop);
++		if (ret) {
++			LOG(Converter, Error)
++				<< "Could not query minimum selection crop: "
++				<< strerror(-ret);
++			return ret;
++		}
++
++		ret = getInputSelection(V4L2_SEL_TGT_CROP_BOUNDS, &maxCrop);
++		if (ret) {
++			LOG(Converter, Error)
++				<< "Could not query maximum selection crop: "
++				<< strerror(-ret);
++			return ret;
++		}
++
++		/* Reset the crop to its maximum */
++		ret = setInputSelection(V4L2_SEL_TGT_CROP, &maxCrop);
++		if (ret) {
++			LOG(Converter, Error)
++				<< "Could not reset selection crop: "
++				<< strerror(-ret);
++			return ret;
++		}
++
++		inputCropBounds_ = { minCrop, maxCrop };
++	}
++
+ 	return 0;
+ }
+ 
+@@ -154,6 +192,21 @@ int V4L2M2MConverter::V4L2M2MStream::queueBuffers(FrameBuffer *input, FrameBuffe
+ 	return 0;
+ }
+ 
++int V4L2M2MConverter::V4L2M2MStream::getInputSelection(unsigned int target, Rectangle *rect)
++{
++	return m2m_->output()->getSelection(target, rect);
++}
++
++int V4L2M2MConverter::V4L2M2MStream::setInputSelection(unsigned int target, Rectangle *rect)
++{
++	return m2m_->output()->setSelection(target, rect);
++}
++
++std::pair<Rectangle, Rectangle> V4L2M2MConverter::V4L2M2MStream::inputCropBounds()
++{
++	return inputCropBounds_;
++}
++
+ std::string V4L2M2MConverter::V4L2M2MStream::logPrefix() const
+ {
+ 	return stream_->configuration().toString();
+@@ -204,6 +257,33 @@ V4L2M2MConverter::V4L2M2MConverter(MediaDevice *media)
+ 		m2m_.reset();
+ 		return;
+ 	}
++
++	/* Discover Feature::InputCrop */
++	Rectangle maxCrop;
++	maxCrop.width = UINT_MAX;
++	maxCrop.height = UINT_MAX;
++
++	ret = m2m_->output()->setSelection(V4L2_SEL_TGT_CROP, &maxCrop);
++	if (ret)
++		return;
++
++	/*
++	 * Rectangles for cropping targets are defined even if the device
++	 * does not support cropping. Their sizes and positions will be
++	 * fixed in such cases.
++	 *
++	 * Set and inspect a crop equivalent to half of the maximum crop
++	 * returned earlier. Use this to determine whether the crop on
++	 * input is really supported.
++	 */
++	Rectangle halfCrop(maxCrop.size() / 2);
++	ret = m2m_->output()->setSelection(V4L2_SEL_TGT_CROP, &halfCrop);
++	if (!ret && halfCrop != maxCrop) {
++		features_ |= Feature::InputCrop;
++
++		LOG(Converter, Info)
++			<< "Converter supports cropping on its input";
++	}
+ }
+ 
+ /**
+@@ -373,6 +453,36 @@ int V4L2M2MConverter::exportBuffers(const Stream *stream, unsigned int count,
+ 	return iter->second->exportBuffers(count, buffers);
+ }
+ 
++/**
++ * \copydoc libcamera::Converter::setInputCrop
++ */
++int V4L2M2MConverter::setInputCrop(const Stream *stream, Rectangle *rect)
++{
++	if (!(features_ & Feature::InputCrop))
++		return -ENOTSUP;
++
++	auto iter = streams_.find(stream);
++	if (iter == streams_.end()) {
++		LOG(Converter, Error) << "Invalid output stream";
++		return -EINVAL;
++	}
++
++	return iter->second->setInputSelection(V4L2_SEL_TGT_CROP, rect);
++}
++
++/**
++ * \copydoc libcamera::Converter::inputCropBounds
++ */
++std::pair<Rectangle, Rectangle>
++V4L2M2MConverter::inputCropBounds(const Stream *stream)
++{
++	auto iter = streams_.find(stream);
++	if (iter == streams_.end())
++		return {};
++
++	return iter->second->inputCropBounds();
++}
++
+ /**
+  * \copydoc libcamera::Converter::start
+  */
+
+From patchwork Thu Sep 26 09:36:22 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Umang Jain <umang.jain@ideasonboard.com>
+X-Patchwork-Id: 21379
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 56EE5C32D4
+	for <parsemail@patchwork.libcamera.org>;
+	Thu, 26 Sep 2024 09:36:42 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id BDD256351B;
+	Thu, 26 Sep 2024 11:36:40 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="ESvreJ1f"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[IPv6:2001:4b98:dc2:55:216:3eff:fef7:d647])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 3BB986350B
+	for <libcamera-devel@lists.libcamera.org>;
+	Thu, 26 Sep 2024 11:36:38 +0200 (CEST)
+Received: from localhost.localdomain (unknown
+	[IPv6:2405:201:2015:f873:55f8:639e:8e9f:12ec])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id F3FB6D80;
+	Thu, 26 Sep 2024 11:35:08 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1727343310;
+	bh=ADZRb1YyXIVAGX7bG5lPmTOfTTEpwS3BKUsXxy/I+Ck=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=ESvreJ1fA9usmR4BiIDlyD58PhhBi2A7axikvJL7MMNluiPbHomUgB3DGSBWLSzj0
+	4msmL4ddG6xSDn9bTKmwp6kxX/VF99qkl6ku46ZVH4UEhZkaHMZTf5M2SeGJ5lNkjT
+	rkAcVZLkln7deIaxnlFzhinjYVfzelfPcCNy408M=
+From: Umang Jain <umang.jain@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+	Stefan Klug <stefan.klug@ideasonboard.com>,
+	Umang Jain <umang.jain@ideasonboard.com>,
+	Paul Elder <paul.elder@ideasonboard.com>,
+	Kieran Bingham <kieran.bingham@ideasonboard.com>
+Subject: [PATCH v8 3/4] libcamera: rkisp1: Prepare for additional camera
+	controls
+Date: Thu, 26 Sep 2024 15:06:22 +0530
+Message-ID: <20240926093623.94136-4-umang.jain@ideasonboard.com>
+X-Mailer: git-send-email 2.45.0
+In-Reply-To: <20240926093623.94136-1-umang.jain@ideasonboard.com>
+References: <20240926093623.94136-1-umang.jain@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+Currently the rkisp1 pipeline handler only registers controls that are
+related to the IPA. This patch prepares the rkisp1 pipeline-handler to
+register camera controls which are not related to the IPA.
+
+Hence, introduce an additional ControlInfoMap for IPA controls. These
+controls will be merged together with the controls in the pipeline
+handler (introduced subsequently) as part of updateControls() and
+together will be registered during the registration of the camera.
+This is similar to what IPU3 pipeline handler handles its controls.
+
+Signed-off-by: Umang Jain <umang.jain@ideasonboard.com>
+Reviewed-by: Paul Elder <paul.elder@ideasonboard.com>
+Reviewed-by: Kieran Bingham <kieran.bingham@ideasonboard.com>
+Reviewed-by: Stefan Klug <stefan.klug@ideasonboard.com>
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+---
+ src/libcamera/pipeline/rkisp1/rkisp1.cpp | 42 ++++++++++++++++++++++--
+ 1 file changed, 39 insertions(+), 3 deletions(-)
+
+diff --git a/src/libcamera/pipeline/rkisp1/rkisp1.cpp b/src/libcamera/pipeline/rkisp1/rkisp1.cpp
+index c02c7cf3..651258e3 100644
+--- a/src/libcamera/pipeline/rkisp1/rkisp1.cpp
++++ b/src/libcamera/pipeline/rkisp1/rkisp1.cpp
+@@ -108,6 +108,8 @@ public:
+ 
+ 	std::unique_ptr<ipa::rkisp1::IPAProxyRkISP1> ipa_;
+ 
++	ControlInfoMap ipaControls_;
++
+ private:
+ 	void paramFilled(unsigned int frame, unsigned int bytesused);
+ 	void setSensorControls(unsigned int frame,
+@@ -183,6 +185,8 @@ private:
+ 	int allocateBuffers(Camera *camera);
+ 	int freeBuffers(Camera *camera);
+ 
++	int updateControls(RkISP1CameraData *data);
++
+ 	MediaDevice *media_;
+ 	std::unique_ptr<V4L2Subdevice> isp_;
+ 	std::unique_ptr<V4L2VideoDevice> param_;
+@@ -364,7 +368,7 @@ int RkISP1CameraData::loadIPA(unsigned int hwRevision)
+ 	}
+ 
+ 	ret = ipa_->init({ ipaTuningFile, sensor_->model() }, hwRevision,
+-			 sensorInfo, sensor_->controls(), &controlInfo_);
++			 sensorInfo, sensor_->controls(), &ipaControls_);
+ 	if (ret < 0) {
+ 		LOG(RkISP1, Error) << "IPA initialization failure";
+ 		return ret;
+@@ -814,12 +818,13 @@ int PipelineHandlerRkISP1::configure(Camera *camera, CameraConfiguration *c)
+ 	ipaConfig.sensorControls = data->sensor_->controls();
+ 	ipaConfig.paramFormat = paramFormat.fourcc;
+ 
+-	ret = data->ipa_->configure(ipaConfig, streamConfig, &data->controlInfo_);
++	ret = data->ipa_->configure(ipaConfig, streamConfig, &data->ipaControls_);
+ 	if (ret) {
+ 		LOG(RkISP1, Error) << "failed configuring IPA (" << ret << ")";
+ 		return ret;
+ 	}
+-	return 0;
++
++	return updateControls(data);
+ }
+ 
+ int PipelineHandlerRkISP1::exportFrameBuffers([[maybe_unused]] Camera *camera, Stream *stream,
+@@ -1086,6 +1091,35 @@ int PipelineHandlerRkISP1::initLinks(Camera *camera,
+ 	return 0;
+ }
+ 
++/**
++ * \brief Update the camera controls
++ * \param[in] data The camera data
++ *
++ * Compute the camera controls by calculating controls which the pipeline
++ * is reponsible for and merge them with the controls computed by the IPA.
++ *
++ * This function needs data->ipaControls_ to be refreshed when a new
++ * configuration is applied to the camera by the IPA configure() function.
++ *
++ * Always call this function after IPA configure() to make sure to have a
++ * properly refreshed IPA controls list.
++ *
++ * \return 0 on success or a negative error code otherwise
++ */
++int PipelineHandlerRkISP1::updateControls(RkISP1CameraData *data)
++{
++	ControlInfoMap::Map controls;
++
++	/* Add the IPA registered controls to list of camera controls. */
++	for (const auto &ipaControl : data->ipaControls_)
++		controls[ipaControl.first] = ipaControl.second;
++
++	data->controlInfo_ = ControlInfoMap(std::move(controls),
++					    controls::controls);
++
++	return 0;
++}
++
+ int PipelineHandlerRkISP1::createCamera(MediaEntity *sensor)
+ {
+ 	int ret;
+@@ -1122,6 +1156,8 @@ int PipelineHandlerRkISP1::createCamera(MediaEntity *sensor)
+ 	if (ret)
+ 		return ret;
+ 
++	updateControls(data.get());
++
+ 	std::set<Stream *> streams{
+ 		&data->mainPathStream_,
+ 		&data->selfPathStream_,
+
+From patchwork Thu Sep 26 09:36:23 2024
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Umang Jain <umang.jain@ideasonboard.com>
+X-Patchwork-Id: 21380
+Return-Path: <libcamera-devel-bounces@lists.libcamera.org>
+X-Original-To: parsemail@patchwork.libcamera.org
+Delivered-To: parsemail@patchwork.libcamera.org
+Received: from lancelot.ideasonboard.com (lancelot.ideasonboard.com
+	[92.243.16.209])
+	by patchwork.libcamera.org (Postfix) with ESMTPS id 4A141C3257
+	for <parsemail@patchwork.libcamera.org>;
+	Thu, 26 Sep 2024 09:36:45 +0000 (UTC)
+Received: from lancelot.ideasonboard.com (localhost [IPv6:::1])
+	by lancelot.ideasonboard.com (Postfix) with ESMTP id C48D46351B;
+	Thu, 26 Sep 2024 11:36:44 +0200 (CEST)
+Authentication-Results: lancelot.ideasonboard.com; dkim=pass (1024-bit key;
+	unprotected) header.d=ideasonboard.com header.i=@ideasonboard.com
+	header.b="OxcogyDv"; dkim-atps=neutral
+Received: from perceval.ideasonboard.com (perceval.ideasonboard.com
+	[213.167.242.64])
+	by lancelot.ideasonboard.com (Postfix) with ESMTPS id 763CB63519
+	for <libcamera-devel@lists.libcamera.org>;
+	Thu, 26 Sep 2024 11:36:39 +0200 (CEST)
+Received: from localhost.localdomain (unknown
+	[IPv6:2405:201:2015:f873:55f8:639e:8e9f:12ec])
+	by perceval.ideasonboard.com (Postfix) with ESMTPSA id 9ABFF1237;
+	Thu, 26 Sep 2024 11:35:10 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ideasonboard.com;
+	s=mail; t=1727343311;
+	bh=/tUFtNczQwLz210jVnY7BlkM5r3iBjnnQS9OOUGqnaM=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=OxcogyDvTv/oIHbtmxP3SPNvWZ5mzqF93fV/KJu12NFvXDfhRiBXsiaFW37EDYJIp
+	cpBVE9Hz3oD1zmIJ/hGqtLjNjLOnIstmckePRVyxOGoh70NVfXO65XoJXAIuMMioOz
+	7QmyyzKC399sua/ZK6Ql16oFR94mbeKrsxdYAPIU=
+From: Umang Jain <umang.jain@ideasonboard.com>
+To: libcamera-devel@lists.libcamera.org
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+	Stefan Klug <stefan.klug@ideasonboard.com>,
+	Umang Jain <umang.jain@ideasonboard.com>
+Subject: [PATCH v8 4/4] libcamera: rkisp1: Plumb the dw100 dewarper as
+	V4L2M2M converter
+Date: Thu, 26 Sep 2024 15:06:23 +0530
+Message-ID: <20240926093623.94136-5-umang.jain@ideasonboard.com>
+X-Mailer: git-send-email 2.45.0
+In-Reply-To: <20240926093623.94136-1-umang.jain@ideasonboard.com>
+References: <20240926093623.94136-1-umang.jain@ideasonboard.com>
+MIME-Version: 1.0
+X-BeenThere: libcamera-devel@lists.libcamera.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <libcamera-devel.lists.libcamera.org>
+List-Unsubscribe: <https://lists.libcamera.org/options/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=unsubscribe>
+List-Archive: <https://lists.libcamera.org/pipermail/libcamera-devel/>
+List-Post: <mailto:libcamera-devel@lists.libcamera.org>
+List-Help: <mailto:libcamera-devel-request@lists.libcamera.org?subject=help>
+List-Subscribe: <https://lists.libcamera.org/listinfo/libcamera-devel>,
+	<mailto:libcamera-devel-request@lists.libcamera.org?subject=subscribe>
+Errors-To: libcamera-devel-bounces@lists.libcamera.org
+Sender: "libcamera-devel" <libcamera-devel-bounces@lists.libcamera.org>
+
+Plumb the dw100 dewarper as a V4L2M2M converter in the rkisp1 pipeline
+handler. If the dewarper is found, it is instantiated and buffers are
+exported from it, instead of RkISP1Path. Internal buffers are allocated
+for the RkISP1Path in case where dewarper is going to be used.
+
+The RKISP1 pipeline handler now supports scaler crop control through
+the converter. Register the ScalerCrop control for the cameras created
+in the RKISP1 pipeline handler.
+
+Signed-off-by: Umang Jain <umang.jain@ideasonboard.com>
+Reviewed-by: Stefan Klug <stefan.klug@ideasonboard.com> 
+---
+ src/libcamera/pipeline/rkisp1/rkisp1.cpp | 186 ++++++++++++++++++++++-
+ 1 file changed, 179 insertions(+), 7 deletions(-)
+
+diff --git a/src/libcamera/pipeline/rkisp1/rkisp1.cpp b/src/libcamera/pipeline/rkisp1/rkisp1.cpp
+index 651258e3..84c2796e 100644
+--- a/src/libcamera/pipeline/rkisp1/rkisp1.cpp
++++ b/src/libcamera/pipeline/rkisp1/rkisp1.cpp
+@@ -6,10 +6,12 @@
+  */
+ 
+ #include <algorithm>
++#include <map>
+ #include <memory>
+ #include <numeric>
+ #include <optional>
+ #include <queue>
++#include <vector>
+ 
+ #include <linux/media-bus-format.h>
+ #include <linux/rkisp1-config.h>
+@@ -32,6 +34,7 @@
+ 
+ #include "libcamera/internal/camera.h"
+ #include "libcamera/internal/camera_sensor.h"
++#include "libcamera/internal/converter/converter_v4l2_m2m.h"
+ #include "libcamera/internal/delayed_controls.h"
+ #include "libcamera/internal/device_enumerator.h"
+ #include "libcamera/internal/framebuffer.h"
+@@ -180,6 +183,7 @@ private:
+ 	void bufferReady(FrameBuffer *buffer);
+ 	void paramReady(FrameBuffer *buffer);
+ 	void statReady(FrameBuffer *buffer);
++	void dewarpBufferReady(FrameBuffer *buffer);
+ 	void frameStart(uint32_t sequence);
+ 
+ 	int allocateBuffers(Camera *camera);
+@@ -199,6 +203,15 @@ private:
+ 	RkISP1MainPath mainPath_;
+ 	RkISP1SelfPath selfPath_;
+ 
++	std::unique_ptr<V4L2M2MConverter> dewarper_;
++	bool useDewarper_;
++
++	std::optional<Rectangle> activeCrop_;
++
++	/* Internal buffers used when dewarper is being used */
++	std::vector<std::unique_ptr<FrameBuffer>> mainPathBuffers_;
++	std::queue<FrameBuffer *> availableMainPathBuffers_;
++
+ 	std::vector<std::unique_ptr<FrameBuffer>> paramBuffers_;
+ 	std::vector<std::unique_ptr<FrameBuffer>> statBuffers_;
+ 	std::queue<FrameBuffer *> availableParamBuffers_;
+@@ -221,6 +234,8 @@ RkISP1FrameInfo *RkISP1Frames::create(const RkISP1CameraData *data, Request *req
+ 
+ 	FrameBuffer *paramBuffer = nullptr;
+ 	FrameBuffer *statBuffer = nullptr;
++	FrameBuffer *mainPathBuffer = nullptr;
++	FrameBuffer *selfPathBuffer = nullptr;
+ 
+ 	if (!isRaw) {
+ 		if (pipe_->availableParamBuffers_.empty()) {
+@@ -238,10 +253,16 @@ RkISP1FrameInfo *RkISP1Frames::create(const RkISP1CameraData *data, Request *req
+ 
+ 		statBuffer = pipe_->availableStatBuffers_.front();
+ 		pipe_->availableStatBuffers_.pop();
++
++		if (pipe_->useDewarper_) {
++			mainPathBuffer = pipe_->availableMainPathBuffers_.front();
++			pipe_->availableMainPathBuffers_.pop();
++		}
+ 	}
+ 
+-	FrameBuffer *mainPathBuffer = request->findBuffer(&data->mainPathStream_);
+-	FrameBuffer *selfPathBuffer = request->findBuffer(&data->selfPathStream_);
++	if (!mainPathBuffer)
++		mainPathBuffer = request->findBuffer(&data->mainPathStream_);
++	selfPathBuffer = request->findBuffer(&data->selfPathStream_);
+ 
+ 	RkISP1FrameInfo *info = new RkISP1FrameInfo;
+ 
+@@ -267,6 +288,7 @@ int RkISP1Frames::destroy(unsigned int frame)
+ 
+ 	pipe_->availableParamBuffers_.push(info->paramBuffer);
+ 	pipe_->availableStatBuffers_.push(info->statBuffer);
++	pipe_->availableMainPathBuffers_.push(info->mainPathBuffer);
+ 
+ 	frameInfo_.erase(info->frame);
+ 
+@@ -282,6 +304,7 @@ void RkISP1Frames::clear()
+ 
+ 		pipe_->availableParamBuffers_.push(info->paramBuffer);
+ 		pipe_->availableStatBuffers_.push(info->statBuffer);
++		pipe_->availableMainPathBuffers_.push(info->mainPathBuffer);
+ 
+ 		delete info;
+ 	}
+@@ -600,7 +623,7 @@ CameraConfiguration::Status RkISP1CameraConfiguration::validate()
+  */
+ 
+ PipelineHandlerRkISP1::PipelineHandlerRkISP1(CameraManager *manager)
+-	: PipelineHandler(manager), hasSelfPath_(true)
++	: PipelineHandler(manager), hasSelfPath_(true), useDewarper_(false)
+ {
+ }
+ 
+@@ -778,12 +801,19 @@ int PipelineHandlerRkISP1::configure(Camera *camera, CameraConfiguration *c)
+ 		<< " crop " << rect;
+ 
+ 	std::map<unsigned int, IPAStream> streamConfig;
++	std::vector<std::reference_wrapper<StreamConfiguration>> outputCfgs;
+ 
+ 	for (const StreamConfiguration &cfg : *config) {
+ 		if (cfg.stream() == &data->mainPathStream_) {
+ 			ret = mainPath_.configure(cfg, format);
+ 			streamConfig[0] = IPAStream(cfg.pixelFormat,
+ 						    cfg.size);
++			/* Configure dewarp */
++			if (dewarper_ && !isRaw_) {
++				outputCfgs.push_back(const_cast<StreamConfiguration &>(cfg));
++				ret = dewarper_->configure(cfg, outputCfgs);
++				useDewarper_ = ret ? false : true;
++			}
+ 		} else if (hasSelfPath_) {
+ 			ret = selfPath_.configure(cfg, format);
+ 			streamConfig[1] = IPAStream(cfg.pixelFormat,
+@@ -833,10 +863,19 @@ int PipelineHandlerRkISP1::exportFrameBuffers([[maybe_unused]] Camera *camera, S
+ 	RkISP1CameraData *data = cameraData(camera);
+ 	unsigned int count = stream->configuration().bufferCount;
+ 
+-	if (stream == &data->mainPathStream_)
+-		return mainPath_.exportBuffers(count, buffers);
+-	else if (hasSelfPath_ && stream == &data->selfPathStream_)
++	if (stream == &data->mainPathStream_) {
++		/*
++		 * Currently, i.MX8MP is the only platform with DW100 dewarper.
++		 * It has mainpath and no self path. Hence, export buffers from
++		 * dewarper just for the main path stream, for now.
++		 */
++		if (useDewarper_)
++			return dewarper_->exportBuffers(&data->mainPathStream_, count, buffers);
++		else
++			return mainPath_.exportBuffers(count, buffers);
++	} else if (hasSelfPath_ && stream == &data->selfPathStream_) {
+ 		return selfPath_.exportBuffers(count, buffers);
++	}
+ 
+ 	return -EINVAL;
+ }
+@@ -860,6 +899,16 @@ int PipelineHandlerRkISP1::allocateBuffers(Camera *camera)
+ 		ret = stat_->allocateBuffers(maxCount, &statBuffers_);
+ 		if (ret < 0)
+ 			goto error;
++
++		/* If the dewarper is being used, allocate internal buffers for ISP. */
++		if (useDewarper_) {
++			ret = mainPath_.exportBuffers(maxCount, &mainPathBuffers_);
++			if (ret < 0)
++				goto error;
++
++			for (std::unique_ptr<FrameBuffer> &buffer : mainPathBuffers_)
++				availableMainPathBuffers_.push(buffer.get());
++		}
+ 	}
+ 
+ 	for (std::unique_ptr<FrameBuffer> &buffer : paramBuffers_) {
+@@ -883,6 +932,7 @@ int PipelineHandlerRkISP1::allocateBuffers(Camera *camera)
+ error:
+ 	paramBuffers_.clear();
+ 	statBuffers_.clear();
++	mainPathBuffers_.clear();
+ 
+ 	return ret;
+ }
+@@ -897,8 +947,12 @@ int PipelineHandlerRkISP1::freeBuffers(Camera *camera)
+ 	while (!availableParamBuffers_.empty())
+ 		availableParamBuffers_.pop();
+ 
++	while (!availableMainPathBuffers_.empty())
++		availableMainPathBuffers_.pop();
++
+ 	paramBuffers_.clear();
+ 	statBuffers_.clear();
++	mainPathBuffers_.clear();
+ 
+ 	std::vector<unsigned int> ids;
+ 	for (IPABuffer &ipabuf : data->ipaBuffers_)
+@@ -954,6 +1008,15 @@ int PipelineHandlerRkISP1::start(Camera *camera, [[maybe_unused]] const ControlL
+ 			return ret;
+ 		}
+ 		actions += [&]() { stat_->streamOff(); };
++
++		if (useDewarper_) {
++			ret = dewarper_->start();
++			if (ret) {
++				LOG(RkISP1, Error) << "Failed to start dewarper";
++				return ret;
++			}
++		}
++		actions += [&]() { dewarper_->stop(); };
+ 	}
+ 
+ 	if (data->mainPath_->isEnabled()) {
+@@ -1000,6 +1063,9 @@ void PipelineHandlerRkISP1::stopDevice(Camera *camera)
+ 		if (ret)
+ 			LOG(RkISP1, Warning)
+ 				<< "Failed to stop parameters for " << camera->id();
++
++		if (useDewarper_)
++			dewarper_->stop();
+ 	}
+ 
+ 	ASSERT(data->queuedRequests_.empty());
+@@ -1110,6 +1176,16 @@ int PipelineHandlerRkISP1::updateControls(RkISP1CameraData *data)
+ {
+ 	ControlInfoMap::Map controls;
+ 
++	if (dewarper_) {
++		std::pair<Rectangle, Rectangle> cropLimits =
++			dewarper_->inputCropBounds(&data->mainPathStream_);
++
++		controls[&controls::ScalerCrop] = ControlInfo(cropLimits.first,
++							      cropLimits.second,
++							      cropLimits.second);
++		activeCrop_ = cropLimits.second;
++	}
++
+ 	/* Add the IPA registered controls to list of camera controls. */
+ 	for (const auto &ipaControl : data->ipaControls_)
+ 		controls[ipaControl.first] = ipaControl.second;
+@@ -1236,6 +1312,29 @@ bool PipelineHandlerRkISP1::match(DeviceEnumerator *enumerator)
+ 	stat_->bufferReady.connect(this, &PipelineHandlerRkISP1::statReady);
+ 	param_->bufferReady.connect(this, &PipelineHandlerRkISP1::paramReady);
+ 
++	/* If dewarper is present, create its instance. */
++	DeviceMatch dwp("dw100");
++	dwp.add("dw100-source");
++	dwp.add("dw100-sink");
++
++	std::shared_ptr<MediaDevice> dwpMediaDevice = enumerator->search(dwp);
++	if (dwpMediaDevice) {
++		dewarper_ = std::make_unique<V4L2M2MConverter>(dwpMediaDevice.get());
++		if (dewarper_->isValid()) {
++			dewarper_->outputBufferReady.connect(
++				this, &PipelineHandlerRkISP1::dewarpBufferReady);
++
++			LOG(RkISP1, Info)
++				<< "Using DW100 dewarper " << dewarper_->deviceNode();
++		} else {
++			LOG(RkISP1, Warning)
++				<< "Found DW100 dewarper " << dewarper_->deviceNode()
++				<< " but invalid";
++
++			dewarper_.reset();
++		}
++	}
++
+ 	/*
+ 	 * Enumerate all sensors connected to the ISP and create one
+ 	 * camera instance for each of them.
+@@ -1282,7 +1381,7 @@ void PipelineHandlerRkISP1::bufferReady(FrameBuffer *buffer)
+ 		return;
+ 
+ 	const FrameMetadata &metadata = buffer->metadata();
+-	Request *request = buffer->request();
++	Request *request = info->request;
+ 
+ 	if (metadata.status != FrameMetadata::FrameCancelled) {
+ 		/*
+@@ -1304,6 +1403,79 @@ void PipelineHandlerRkISP1::bufferReady(FrameBuffer *buffer)
+ 			info->metadataProcessed = true;
+ 	}
+ 
++	if (!useDewarper_) {
++		completeBuffer(request, buffer);
++		tryCompleteRequest(info);
++
++		return;
++	}
++
++	/* Do not queue cancelled frames to dewarper. */
++	if (metadata.status == FrameMetadata::FrameCancelled) {
++		/*
++		 * i.MX8MP is the only known platform with dewarper. It has
++		 * no self path. Hence, only main path buffer completion is
++		 * required.
++		 *
++		 * Also, we cannot completeBuffer(request, buffer) as buffer
++		 * here, is an internal buffer (between ISP and dewarper) and
++		 * is not associated to the any specific request. The request
++		 * buffer associated with main path stream is the one that
++		 * is required to be completed (not the internal buffer).
++		 */
++		for (auto it : request->buffers()) {
++			if (it.first == &data->mainPathStream_)
++				completeBuffer(request, it.second);
++		}
++
++		tryCompleteRequest(info);
++		return;
++	}
++
++	/* Handle scaler crop control. */
++	const auto &crop = request->controls().get(controls::ScalerCrop);
++	if (crop) {
++		Rectangle appliedRect = crop.value();
++
++		int ret = dewarper_->setInputCrop(&data->mainPathStream_,
++						  &appliedRect);
++		if (!ret && appliedRect != crop.value()) {
++			/*
++			 * If the rectangle is changed by setInputCrop on the
++			 * dewarper, log a debug message and cache the actual
++			 * applied rectangle for metadata reporting.
++			 */
++			LOG(RkISP1, Debug)
++				<< "Applied rectangle " << appliedRect.toString()
++				<< " differs from requested " << crop.value().toString();
++		}
++
++		activeCrop_ = appliedRect;
++	}
++
++	/*
++	 * Queue input and output buffers to the dewarper. The output
++	 * buffers for the dewarper are the buffers of the request, supplied
++	 * by the application.
++	 */
++	int ret = dewarper_->queueBuffers(buffer, request->buffers());
++	if (ret < 0)
++		LOG(RkISP1, Error) << "Cannot queue buffers to dewarper: "
++				   << strerror(-ret);
++
++	request->metadata().set(controls::ScalerCrop, activeCrop_.value());
++}
++
++void PipelineHandlerRkISP1::dewarpBufferReady(FrameBuffer *buffer)
++{
++	ASSERT(activeCamera_);
++	RkISP1CameraData *data = cameraData(activeCamera_);
++	Request *request = buffer->request();
++
++	RkISP1FrameInfo *info = data->frameInfo_.find(buffer->request());
++	if (!info)
++		return;
++
+ 	completeBuffer(request, buffer);
+ 	tryCompleteRequest(info);
+ }
