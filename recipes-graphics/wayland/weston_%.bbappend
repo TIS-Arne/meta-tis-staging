@@ -1,5 +1,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-PACKAGECONFIG:append = " vnc"
+PACKAGECONFIG:append = " rdp vnc headless"
 
 FILES:${PN}:append = " ${sysconfdir}/pam.d/weston-remote-access"
