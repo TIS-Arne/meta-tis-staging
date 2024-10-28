@@ -37,8 +37,8 @@ algorithms:
       Gr: 4096
       Gb: 4096
       B:  4096
-  # - GammaOutCorrection:
-  #   gamma: 1
+  - GammaOutCorrection:
+      gamma: 2.2
   - ColorProcessing:
   # - Ccm:
 ...
