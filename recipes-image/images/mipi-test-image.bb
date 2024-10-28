@@ -1,5 +1,9 @@
 inherit core-image
 
+PV = "1.0"
+PR = "r1"
+
+
 TOOLCHAIN_HOST_TASK:append = " nativesdk-python3-jinja2 nativesdk-python3-ply nativesdk-python3-pyyaml"
 
 TEZI_AUTO_INSTALL = "true"
